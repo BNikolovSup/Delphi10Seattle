@@ -1,0 +1,8 @@
+Key=AnsiString
+Description=AnsiString
+DescriptionEn=AnsiString
+nhif_code=AnsiString
+clinical_speciality=AnsiString
+nhif_name=AnsiString
+role=AnsiString
+Logical=tLogicalSet:Is_
