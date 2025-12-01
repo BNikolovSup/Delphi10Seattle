@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, Vcl.StdCtrls, SynEditHighlighter, SynEditCodeFolding,
   SynHighlighterPas, SynMemo, SynEdit, Vcl.Grids, Vcl.ValEdit, SynEditTypes, SynEditMiscClasses, SynEditSearch,
-  Vcl.ComCtrls, IBX.IBSQL, IBX.IBDatabase, Data.DB, CodeGenHelpers, System.StrUtils, DDLGenerator;
+  Vcl.ComCtrls, IBX.IBSQL, IBX.IBDatabase, Data.DB, System.StrUtils, DDLGenerator;
 
 type
   TfrmMainGenerator = class(TForm)
@@ -1521,6 +1521,9 @@ var
   fldName, fldType: string;
 begin
   Result := TStringList.Create;
+  Result.Add('    case T!TableName!Item.TPropertyIndex(Field) of');
+
+
   for i := 1 to vlsProp.RowCount - 1 do
   begin
     fldName := Trim(vlsProp.Cells[0, i]);
@@ -1529,6 +1532,10 @@ begin
     if fldType.Contains('tdate') or fldType.Contains('ttime') or fldType.Contains('timestamp') then
       Result.Add(Format('    !TableName!_%s: ListForFinder[0].PRecord.%s := Value;', [fldName, fldName]));
   end;
+  if Result.Count > 1 then
+    Result.Add('    end;')
+  else
+    Result.Clear;
 end;
 
 
@@ -1538,6 +1545,7 @@ var
   fldName, fldType: string;
 begin
   Result := TStringList.Create;
+  Result.Add('    case T!TableName!Item.TPropertyIndex(Field) of');
   for i := 1 to vlsProp.RowCount - 1 do
   begin
     fldName := Trim(vlsProp.Cells[0, i]);
@@ -1547,6 +1555,10 @@ begin
        fldType.Contains('cardinal') or fldType.Contains('int64') then
       Result.Add(Format('    !TableName!_%s: ListForFinder[0].PRecord.%s := Value;', [fldName, fldName]));
   end;
+  if Result.Count > 1 then
+    Result.Add('    end;')
+  else
+    Result.Clear;
 end;
 
 
@@ -2197,7 +2209,7 @@ begin
 
   // find start tag
   for i := 0 to sl.Count - 1 do
-    if Pos('[' + startTag + ']', sl[i]) > 0 then
+    if Pos('{' + startTag + '}', sl[i]) > 0 then
     begin
       startIdx := i;
       Break;
@@ -2207,7 +2219,7 @@ begin
 
   // find end tag
   for i := startIdx + 1 to sl.Count - 1 do
-    if Pos('[' + endTag + ']', sl[i]) > 0 then
+    if Pos('{' + endTag + '}', sl[i]) > 0 then
     begin
       endIdx := i;
       Break;

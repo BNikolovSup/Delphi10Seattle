@@ -161,12 +161,16 @@ TCL009Item = class(TBaseItem)
     procedure ApplyVisibilityFromTree(RootNode: PVirtualNode);override;
 	function GetCollType: TCollectionsType; override;
 	function GetCollDelType: TCollectionsType; override;
+	{NZIS_START}
 	procedure ImportXMLNzis(cl000: TObject);
+	{NZIS_END}
   end;
 
 implementation
+{NZIS_START}
 uses
   Nzis.Nomen.baseCL000, System.Rtti;
+{NZIS_END}  
 
 { TCL009Item }
 
@@ -1366,10 +1370,7 @@ procedure TCL009Coll.OnSetDateSearchEDT(Value: TDate; field: Word; Condition: TC
 begin
   Include(ListForFinder[0].PRecord.setProp, TCL009Item.TPropertyIndex(Field));
   Self.PRecordSearch.setProp := ListForFinder[0].PRecord.setProp;
-
-  case TCL009Item.TPropertyIndex(Field) of
-
-  end;
+  
 end;
 
 
@@ -1379,9 +1380,6 @@ begin
   Include(ListForFinder[0].PRecord.setProp, TCL009Item.TPropertyIndex(Field));
   Self.PRecordSearch.setProp := ListForFinder[0].PRecord.setProp;
 
-  case TCL009Item.TPropertyIndex(Field) of
-
-  end;
 end;
 
 
@@ -1912,6 +1910,7 @@ begin
   end;
 end;
 
+{NZIS_START}
 procedure TCL009Coll.ImportXMLNzis(cl000: TObject);
 var
   Acl000: TCL000EntryCollection;
@@ -2068,6 +2067,6 @@ begin
     TempItem.PRecord := nil;
   end;
 end;
-
+{NZIS_END}
 
 end.

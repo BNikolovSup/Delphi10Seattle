@@ -1,4 +1,4 @@
-unit CodeGenHelpers;
+﻿unit CodeGenHelpers;
 
 interface
 uses
@@ -9,8 +9,23 @@ uses
 
   type
   TFieldInfo = record
-    PropName: string;   // ����. PREGLED_ID
+    PropName: string;   // напр. PREGLED_ID
     FieldType: string;  // integer, word, boolean, AnsiString, TDate, Logical...
+  end;
+
+  TCodeGenHelper = class
+  public
+    class procedure AddCode(sl: TStrings; const S: string);
+    class procedure AddLine(sl: TStrings); inline;
+    class procedure AddFmt(sl: TStrings; const Fmt: string; const Args: array of const);
+
+    // --- NEW: Safe case generator (removes empty case blocks) ---
+    class procedure EmitCaseBlock(sl: TStrings;
+      const CaseHeader: string;
+      const BodyLines: TStrings;
+      const Indent: string = '    ');
+
+    class function CreateTempList: TStringList; inline;
   end;
 
 
@@ -156,7 +171,7 @@ begin
     SL.Add('');
     SL.Add('  case T' + TableName + 'Item.TPropertyIndex(Field) of');
 
-    // �������� case �������
+    // Генерира case клонове
     for i := 0 to Fields.Count - 1 do
     begin
       FieldName := Trim(Fields.Names[i]);
@@ -188,6 +203,9 @@ begin
 
     SL.Add('  end;');
     SL.Add('end;');
+    TCodeGenHelper.EmitCaseBlock(sl,
+      'case propIndex of',
+      sl);
 
     Result := SL.Text;
   finally
@@ -195,5 +213,67 @@ begin
   end;
 end;
 
+
+{ TCodeGenHelper }
+
+class procedure TCodeGenHelper.AddCode(sl: TStrings; const S: string);
+begin
+  if (sl.Count = 0) or (Trim(sl[sl.Count - 1]) <> Trim(S)) then
+    sl.Add(S);
+end;
+
+class procedure TCodeGenHelper.AddLine(sl: TStrings);
+begin
+  sl.Add('');
+end;
+
+class procedure TCodeGenHelper.AddFmt(sl: TStrings; const Fmt: string; const Args: array of const);
+begin
+  sl.Add(Format(Fmt, Args));
+end;
+
+class function TCodeGenHelper.CreateTempList: TStringList;
+begin
+  Result := TStringList.Create;
+  Result.StrictDelimiter := False;
+  Result.Delimiter := ';';
+end;
+
+{ NEW: EmitCaseBlock — интелигентно генериране на case секции }
+class procedure TCodeGenHelper.EmitCaseBlock(
+  sl: TStrings;
+  const CaseHeader: string;
+  const BodyLines: TStrings;
+  const Indent: string);
+var
+  i: Integer;
+  nonEmpty: Boolean;
+begin
+  nonEmpty := False;
+
+  // Проверка има ли реални редове в BodyLines
+  for i := 0 to BodyLines.Count - 1 do
+  begin
+    if Trim(BodyLines[i]) <> '' then
+    begin
+      nonEmpty := True;
+      Break;
+    end;
+  end;
+
+  // Ако няма нито един ред → изтриваме цялата case секция
+  if not nonEmpty then
+    Exit;
+
+  // Иначе → генерираме секцията
+  sl.Add(CaseHeader);
+  sl.Add(Indent + 'begin');
+
+  for i := 0 to BodyLines.Count - 1 do
+    if Trim(BodyLines[i]) <> '' then
+      sl.Add(Indent + '  ' + BodyLines[i]);
+
+  sl.Add(Indent + 'end;');
+end;
 
 end.
