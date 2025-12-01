@@ -1,4 +1,4 @@
-unit MainGenerator; //GetCellFromRecord  !VirtualTrees! pregled   real   TLogical  templ  === DATE SEARCH HANDLER ===
+п»їunit MainGenerator; //GetCellFromRecord  !VirtualTrees! read   real   TLogical  templ  === DATE SEARCH HANDLER ===
 
 interface
 
@@ -84,6 +84,7 @@ type
     function IsTreeLink: Boolean;
     function getProcIndexValue: TStringList;
     function getProcSetSearchingValue: TStringList;
+    function getProcImportXMLNzis: TStringList;
     function getProcSortByIndexValue: TStringList;
     function getProcIsFullFinded: TStringList;
     function GetProcPropType: TStringList;
@@ -97,6 +98,8 @@ type
 
     function getProcFillProp: TStringList;
     procedure SetfldSizeStr(const Value: string);
+    function IsNzisNomenclature(const s: string): Boolean;
+    procedure RemoveTaggedBlock(sl: TStrings; const startTag, endTag: string; AStartOf: integer = -1);
 
   public
     FTLogical: TStringList;
@@ -601,6 +604,8 @@ begin
   SynMemo1.SearchReplace('!ProcSetField!', Trim(getProcSetField.Text), [ssoReplace]);
   SynMemo1.SearchReplace('!ProcSetSearchingValue!', Trim(getProcSetSearchingValue.Text), [ssoReplace]);
   SynMemo1.SearchReplace('!ProcSortByIndexValue!', Trim(getProcSortByIndexValue.Text), [ssoReplace]);
+  SynMemo1.SearchReplace('!ProcImportXMLNzis!', Trim(getProcImportXMLNzis.Text), [ssoReplace]);
+
   SynMemo1.CaretX := 0;
   SynMemo1.CaretY := 0;
 
@@ -617,9 +622,17 @@ begin
   SynMemo1.CaretY := 0;
   SynMemo1.SearchReplace('!fldSizeStr!', fldSizeStr, [ssoReplaceAll]);
 
+
+  if not IsNzisNomenclature(edtNameTable.Text) then
+  begin
+    RemoveTaggedBlock(SynMemo1.Lines, 'NZIS_START', 'NZIS_END');
+  end;
+
   SynMemo1.Lines.SaveToFile('..\Table.' + tableName + '.pas2', TEncoding.ANSI);
 
   vlsProp.Strings.SaveToFile('..\Table.' + tableName + '.ddl', TEncoding.ANSI);
+
+
 end;
 
 
@@ -668,7 +681,7 @@ begin
                    prefix + '  stream.Read(Self.PRecord.' + fldName + '[1], lenStr);' + sLineBreak +
                    prefix + 'end;');
 
-      // STRING (ако имаш ShortString)
+      // STRING (Р°РєРѕ РёРјР°С€ ShortString)
       'S':
         Result.Add(prefix + '!TableName!_' + fldName +
                    ': stream.Read(Self.PRecord.' + fldName +
@@ -946,8 +959,8 @@ begin
   Result := TStringList.Create;
   cmpLines := TStringList.Create;
   try
-    // Въвеждащ коментар/заглавие (можеш да го промениш)
-    cmpLines.Add('  // === проверки за запазване (CheckForSave) ===');
+    // Р’СЉРІРµР¶РґР°С‰ РєРѕРјРµРЅС‚Р°СЂ/Р·Р°РіР»Р°РІРёРµ (РјРѕР¶РµС€ РґР° РіРѕ РїСЂРѕРјРµРЅРёС€)
+    cmpLines.Add('  // === РїСЂРѕРІРµСЂРєРё Р·Р° Р·Р°РїР°Р·РІР°РЅРµ (CheckForSave) ===');
     cmpLines.Add('');
 
     for i := 1 to vlsProp.RowCount - 1 do
@@ -956,10 +969,10 @@ begin
       fldType := Trim(LowerCase(vlsProp.Cells[1, i]));
       if fldName = '' then Continue;
 
-      // Логикал (специален случай)
+      // Р›РѕРіРёРєР°Р» (СЃРїРµС†РёР°Р»РµРЅ СЃР»СѓС‡Р°Р№)
       if fldType.Contains('logical') or fldType.Contains('tlogical') or fldType.Contains('tlogicalset') then
       begin
-        // Опитваме се да разпознаем дали е 40 или 32 битов логикал по описанието
+        // РћРїРёС‚РІР°РјРµ СЃРµ РґР° СЂР°Р·РїРѕР·РЅР°РµРј РґР°Р»Рё Рµ 40 РёР»Рё 32 Р±РёС‚РѕРІ Р»РѕРіРёРєР°Р» РїРѕ РѕРїРёСЃР°РЅРёРµС‚Рѕ
         //logSizeStr
         begin
           cmpLines.Add(Format('  if (%s_%s in tempItem.PRecord.setProp) and (TLogicalData' + logSizeStr + '(tempItem.PRecord.%s) <> Self.getLogical' + logSizeStr + 'Map(tempItem.DataPos, word(%s_%s))) then',
@@ -974,7 +987,7 @@ begin
         Continue;
       end;
 
-      // Текстови полета (AnsiString / string)
+      // РўРµРєСЃС‚РѕРІРё РїРѕР»РµС‚Р° (AnsiString / string)
       if fldType.Contains('ansistring') or fldType.Contains('string') then
       begin
         cmpLines.Add(Format('  if (%s_%s in tempItem.PRecord.setProp) and (tempItem.PRecord.%s <> Self.getAnsiStringMap(tempItem.DataPos, word(%s_%s))) then',
@@ -987,7 +1000,7 @@ begin
         Continue;
       end;
 
-      // Дати/време
+      // Р”Р°С‚Рё/РІСЂРµРјРµ
       if fldType.Contains('tdate') or fldType.Contains('ttime') or fldType.Contains('timestamp') then
       begin
         cmpLines.Add(Format('  if (%s_%s in tempItem.PRecord.setProp) and (tempItem.PRecord.%s <> Self.getDateMap(tempItem.DataPos, word(%s_%s))) then',
@@ -1036,7 +1049,7 @@ begin
       cmpLines.Add('');
     end;
 
-    // Добавяме крайните редове към резултата (можеш да промениш заглавието/вкарване)
+    // Р”РѕР±Р°РІСЏРјРµ РєСЂР°Р№РЅРёС‚Рµ СЂРµРґРѕРІРµ РєСЉРј СЂРµР·СѓР»С‚Р°С‚Р° (РјРѕР¶РµС€ РґР° РїСЂРѕРјРµРЅРёС€ Р·Р°РіР»Р°РІРёРµС‚Рѕ/РІРєР°СЂРІР°РЅРµ)
     Result.AddStrings(cmpLines);
   finally
     cmpLines.Free;
@@ -1337,7 +1350,7 @@ var
 begin
   Result := TStringList.Create;
 
-  // намираме реда с "Logical=" от таблицата
+  // РЅР°РјРёСЂР°РјРµ СЂРµРґР° СЃ "Logical=" РѕС‚ С‚Р°Р±Р»РёС†Р°С‚Р°
   logicalLine := '';
   for i := 1 to vlsProp.RowCount - 1 do
   begin
@@ -1350,7 +1363,7 @@ begin
 
   if logicalLine <> '' then
   begin
-    // взимаме частта след двоеточието
+    // РІР·РёРјР°РјРµ С‡Р°СЃС‚С‚Р° СЃР»РµРґ РґРІРѕРµС‚РѕС‡РёРµС‚Рѕ
     logicalFlags := Copy(logicalLine, Pos(':', logicalLine) + 1, MaxInt);
     flags := logicalFlags.Split([',']);
 
@@ -1810,6 +1823,95 @@ begin
   end;
 end;
 
+function TfrmMainGenerator.getProcImportXMLNzis: TStringList;
+var
+  i: Integer;
+  fld, propEnum: string;
+begin
+  Result := TStringList.Create;
+
+  Result.Add('  Acl000 := TCL000EntryCollection(cl000);');
+  Result.Add('');
+  Result.Add('  // --- Build index mapping between XML meta fields and DDL properties ---');
+  Result.Add('  SetLength(idx, 0);');
+  Result.Add('  j := 0;');
+  Result.Add('');
+  Result.Add('  for propIdx := Low(T!TableName!Item.TPropertyIndex) to High(T!TableName!Item.TPropertyIndex) do');
+  Result.Add('  begin');
+  Result.Add('    propName := TRttiEnumerationType.GetName(propIdx);');
+  Result.Add('');
+  Result.Add('    // Skip technical');
+  Result.Add('    if SameText(propName, ''!TableName!_Key'') then Continue;');
+  Result.Add('    if SameText(propName, ''!TableName!_Description'') then Continue;');
+  Result.Add('    if SameText(propName, ''!TableName!_Logical'') then Continue;');
+  Result.Add('');
+  Result.Add('    // Remove prefix e.g. "CL000_"');
+  Result.Add('    xmlName := propName.Substring(' + IntToStr(Length(edtNameTable.Text) + 1) + ');');
+  Result.Add('');
+  Result.Add('    // Convert property name to XML name (replace "_" with " ")');
+  Result.Add('    xmlName := xmlName.Replace(''_'', '' '');');
+  Result.Add('');
+  Result.Add('    // Find matching meta-field index');
+  Result.Add('    for i := 0 to Acl000.FieldsNames.Count - 1 do');
+  Result.Add('    begin');
+  Result.Add('      if SameText(Acl000.FieldsNames[i], xmlName) or SameText(Acl000.FieldsNames[i], propName.Substring(' + IntToStr(Length(edtNameTable.Text) + 1) + ')) then');
+  Result.Add('      begin');
+  Result.Add('        SetLength(idx, Length(idx)+1);');
+  Result.Add('        idx[High(idx)] := i;');
+  Result.Add('        Break;');
+  Result.Add('      end;');
+  Result.Add('    end;');
+  Result.Add('  end;');
+  Result.Add('');
+  Result.Add('  // --- Insert rows from XML into the generated collection ---');
+  Result.Add('  for i := 0 to Acl000.Count - 1 do');
+  Result.Add('  begin');
+  Result.Add('    entry := Acl000.Items[i];');
+  Result.Add('    TempItem := T!TableName!Item(Self.Add);');
+  Result.Add('    New(TempItem.PRecord);');
+  Result.Add('    TempItem.PRecord.setProp := [];');
+  Result.Add('');
+  Result.Add('    // Key');
+  Result.Add('    TempItem.PRecord.Key := entry.Key;');
+  Result.Add('    Include(TempItem.PRecord.setProp, !TableName!_Key);');
+  Result.Add('');
+  Result.Add('    // Description');
+  Result.Add('    TempItem.PRecord.Description := entry.Descr;');
+  Result.Add('    Include(TempItem.PRecord.setProp, !TableName!_Description);');
+  Result.Add('');
+  Result.Add('    j := 0;');
+  Result.Add('');
+  // РіРµРЅРµСЂРёСЂР°РЅРµ РЅР° РІСЃРёС‡РєРё РїРѕР»РµС‚Р°, Р±РµР· РїСЉСЂРІРёС‚Рµ 2 Рё РµРґРЅРѕ Р·Р° Р·Р°РіР»Р°РІРёРµС‚Рѕ РЅР° vlsProp
+  for i := 3 to vlsProp.RowCount - 1 do
+  begin
+    fld := vlsProp.Keys[i];               // e.g. "DescriptionEn"
+    if fld = 'Logical' then continue;
+
+    propEnum := '!TableName!_' + fld; // e.g. "CL006_DescriptionEn"
+
+    Result.Add('    // ' + fld);
+    Result.Add('    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then');
+    Result.Add('    begin');
+    Result.Add('      TempItem.PRecord.' + fld + ' := entry.FMetaDataFields[idx[j]].Value;');
+    Result.Add('      Include(TempItem.PRecord.setProp, ' + propEnum + ');');
+    Result.Add('    end;');
+    Result.Add('    Inc(j);');
+    Result.Add('');
+  end;
+
+  Result.Add('    TempItem.Insert!TableName!;');
+  Result.Add('    Self.streamComm.Len := Self.streamComm.Size;');
+  Result.Add('    Self.cmdFile.CopyFrom(Self.streamComm, 0);');
+  Result.Add('    Dispose(TempItem.PRecord);');
+  Result.Add('    TempItem.PRecord := nil;');
+  Result.Add('  end;');
+
+
+end;
+
+
+
+
 function TfrmMainGenerator.getProcSortByIndexValue: TStringList;
 var
   i: Integer;
@@ -2074,6 +2176,53 @@ begin
     end;
   end;
 end;
+
+function TfrmMainGenerator.IsNzisNomenclature(const s: string): Boolean;
+begin
+  // CL + exactly 3 digits
+  Result :=
+     (Length(s) = 5) and
+     (Copy(s,1,2) = 'CL') and
+     (CharInSet(s[3], ['0'..'9'])) and
+     (CharInSet(s[4], ['0'..'9'])) and
+     (CharInSet(s[5], ['0'..'9']));
+end;
+
+procedure TfrmMainGenerator.RemoveTaggedBlock(sl: TStrings; const startTag, endTag: string; AStartOf: integer = -1);
+var
+  i, startIdx, endIdx: Integer;
+begin
+  startIdx := AStartOf;
+  endIdx := -1;
+
+  // find start tag
+  for i := 0 to sl.Count - 1 do
+    if Pos('[' + startTag + ']', sl[i]) > 0 then
+    begin
+      startIdx := i;
+      Break;
+    end;
+
+  if startIdx = -1 then Exit; // no block в†’ nothing to remove
+
+  // find end tag
+  for i := startIdx + 1 to sl.Count - 1 do
+    if Pos('[' + endTag + ']', sl[i]) > 0 then
+    begin
+      endIdx := i;
+      Break;
+    end;
+
+  if endIdx = -1 then Exit; // malformed в†’ fail safe
+
+  // delete EVERYTHING including the tags
+  for i := endIdx downto startIdx do
+    sl.Delete(i);
+
+  RemoveTaggedBlock(sl, startTag, endTag, startIdx);
+
+end;
+
 
 end.
 

@@ -149,9 +149,12 @@ TCL006Item = class(TBaseItem)
     procedure ApplyVisibilityFromTree(RootNode: PVirtualNode);override;
 	function GetCollType: TCollectionsType; override;
 	function GetCollDelType: TCollectionsType; override;
+	procedure ImportXMLNzis(cl000: TObject);
   end;
 
 implementation
+uses
+  Nzis.Nomen.baseCL000, System.Rtti;
 
 { TCL006Item }
 
@@ -1638,5 +1641,115 @@ begin
       CL006_role: SortByIndexAnsiString;
   end;
 end;
+
+procedure TCL006Coll.ImportXMLNzis(cl000: TObject);
+var
+  Acl000: TCL000EntryCollection;
+  i, j: integer;
+  TempItem: TCL006Item;
+  entry: TCL000EntryItem;
+  idx: array of integer;
+  propIdx: TCL006Item.TPropertyIndex;
+  xmlName: string;
+begin
+  Acl000 := TCL000EntryCollection(cl000);
+
+  // --- Build index mapping between XML meta fields and DDL properties ---
+  SetLength(idx, 0);
+  j := 0;
+
+  for propIdx := Low(TCL006Item.TPropertyIndex) to High(TCL006Item.TPropertyIndex) do
+  begin
+    propName := TRttiEnumerationType.GetName(propIdx);
+
+    // Skip technical
+    if SameText(propName, 'CL006_Key') then Continue;
+    if SameText(propName, 'CL006_Description') then Continue;
+    if SameText(propName, 'CL006_Logical') then Continue;
+
+    // Remove prefix e.g. "CL000_"
+    xmlName := propName.Substring(6);
+
+    // Convert property name to XML name (replace "_" with " ")
+    xmlName := xmlName.Replace('_', ' ');
+
+    // Find matching meta-field index
+    for i := 0 to Acl000.FieldsNames.Count - 1 do
+    begin
+      if SameText(Acl000.FieldsNames[i], xmlName) or SameText(Acl000.FieldsNames[i], propName.Substring(6)) then
+      begin
+        SetLength(idx, Length(idx)+1);
+        idx[High(idx)] := i;
+        Break;
+      end;
+    end;
+  end;
+
+  // --- Insert rows from XML into the generated collection ---
+  for i := 0 to Acl000.Count - 1 do
+  begin
+    entry := Acl000.Items[i];
+    TempItem := TCL006Item(Self.Add);
+    New(TempItem.PRecord);
+    TempItem.PRecord.setProp := [];
+
+    // Key
+    TempItem.PRecord.Key := entry.Key;
+    Include(TempItem.PRecord.setProp, CL006_Key);
+
+    // Description
+    TempItem.PRecord.Description := entry.Descr;
+    Include(TempItem.PRecord.setProp, CL006_Description);
+
+    j := 0;
+
+    // DescriptionEn
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.DescriptionEn := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL006_DescriptionEn);
+    end;
+    Inc(j);
+
+    // nhif_code
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.nhif_code := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL006_nhif_code);
+    end;
+    Inc(j);
+
+    // clinical_speciality
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.clinical_speciality := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL006_clinical_speciality);
+    end;
+    Inc(j);
+
+    // nhif_name
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.nhif_name := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL006_nhif_name);
+    end;
+    Inc(j);
+
+    // role
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.role := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL006_role);
+    end;
+    Inc(j);
+
+    TempItem.InsertCL006;
+    Self.streamComm.Len := Self.streamComm.Size;
+    Self.cmdFile.CopyFrom(Self.streamComm, 0);
+    Dispose(TempItem.PRecord);
+    TempItem.PRecord := nil;
+  end;
+end;
+
 
 end.
