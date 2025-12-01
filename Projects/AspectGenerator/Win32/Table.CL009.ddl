@@ -1,0 +1,14 @@
+Key=AnsiString
+Description=AnsiString
+units=AnsiString
+inn_code=AnsiString
+form_id=AnsiString
+package=AnsiString
+permit_owner=AnsiString
+form=AnsiString
+permit_number=AnsiString
+quantity=AnsiString
+atc=AnsiString
+is_narcotic=AnsiString
+inn=AnsiString
+Logical=tLogicalSet:Is_

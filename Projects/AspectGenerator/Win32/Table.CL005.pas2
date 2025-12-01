@@ -1,0 +1,3109 @@
+unit Table.CL005;
+
+interface
+uses
+  Aspects.Collections, Aspects.Types, Aspects.Functions, Vcl.Dialogs,
+  VCLTee.Grid, Tee.Grid.Columns, Tee.GridData.Strings,
+  classes, system.SysUtils, windows, System.Generics.Collections,
+  VirtualTrees, VCLTee.Control, System.Generics.Defaults;
+
+type
+TCollectionForSort = class(TPersistent)
+  private
+    FItemClass: TCollectionItemClass;
+    FItems: TList<TCollectionItem>;
+  end;
+
+TFindedResult = record
+  PropIndex: Word;
+  DataPos: Cardinal;
+end;
+
+TTeeGRD = class(VCLTee.Grid.TTeeGrid);
+
+
+
+TCL005Item = class(TBaseItem)
+  public
+    type
+      TPropertyIndex = (
+       CL005_ADDRESS_ACT
+       , CL005_ADDRESS_DOGNZOK
+       , CL005_ADRES
+       , CL005_BANKA
+       , CL005_BANKOW_KOD
+       , CL005_BULSTAT
+       , CL005_COMPANYNAME
+       , CL005_CONTRACT_DATE
+       , CL005_CONTRACT_RZOK
+       , CL005_CONTRACT_TYPE
+       , CL005_DAN_NOMER
+       , CL005_EGN
+       , CL005_FNAME
+       , CL005_FULLNAME
+       , CL005_INVOICECOMPANY
+       , CL005_ISSUER_TYPE
+       , CL005_IS_SAMOOSIG
+       , CL005_KOD_RAJON
+       , CL005_KOD_RZOK
+       , CL005_LNAME
+       , CL005_LNCH
+       , CL005_NAME
+       , CL005_NAS_MQSTO
+       , CL005_NEBL_USL
+       , CL005_NOMER_LZ
+       , CL005_NOM_NAP
+       , CL005_NZOK_NOMER
+       , CL005_OBLAST
+       , CL005_OBSHTINA
+       , CL005_SELF_INSURED_DECLARATION
+       , CL005_SMETKA
+       , CL005_SNAME
+       , CL005_UPRAVITEL
+       , CL005_VIDFIRMA
+       , CL005_VID_IDENT
+       , CL005_VID_PRAKTIKA
+       );
+	  
+      TSetProp = set of TPropertyIndex;
+      PSetProp = ^TSetProp;
+      PRecCL005 = ^TRecCL005;
+      TRecCL005 = record
+        ADDRESS_ACT: AnsiString;
+        ADDRESS_DOGNZOK: AnsiString;
+        ADRES: AnsiString;
+        BANKA: AnsiString;
+        BANKOW_KOD: AnsiString;
+        BULSTAT: AnsiString;
+        COMPANYNAME: AnsiString;
+        CONTRACT_DATE: TDate;
+        CONTRACT_RZOK: AnsiString;
+        CONTRACT_TYPE: word;
+        DAN_NOMER: AnsiString;
+        EGN: AnsiString;
+        FNAME: AnsiString;
+        FULLNAME: AnsiString;
+        INVOICECOMPANY: boolean;
+        ISSUER_TYPE: boolean;
+        IS_SAMOOSIG: boolean;
+        KOD_RAJON: AnsiString;
+        KOD_RZOK: AnsiString;
+        LNAME: AnsiString;
+        LNCH: AnsiString;
+        NAME: AnsiString;
+        NAS_MQSTO: AnsiString;
+        NEBL_USL: double;
+        NOMER_LZ: AnsiString;
+        NOM_NAP: AnsiString;
+        NZOK_NOMER: AnsiString;
+        OBLAST: AnsiString;
+        OBSHTINA: AnsiString;
+        SELF_INSURED_DECLARATION: boolean;
+        SMETKA: AnsiString;
+        SNAME: AnsiString;
+        UPRAVITEL: AnsiString;
+        VIDFIRMA: AnsiString;
+        VID_IDENT: AnsiString;
+        VID_PRAKTIKA: AnsiString;
+        setProp: TSetProp;
+      end;
+
+  public
+    PRecord: ^TRecCL005;
+	IndexInt: Integer;
+	IndexWord: Word;
+	IndexAnsiStr: PAnsiChar;
+    IndexAnsiStr1: AnsiString;
+    IndexField: TPropertyIndex;
+	
+    constructor Create(Collection: TCollection); override;
+    destructor Destroy; override;
+    procedure InsertCL005;
+    procedure UpdateCL005;
+    procedure SaveCL005(var dataPosition: Cardinal)overload;
+	procedure SaveCL005(Abuf: Pointer; var dataPosition: Cardinal)overload;
+	function IsFullFinded(buf: Pointer; FPosDataADB: Cardinal; coll: TCollection): Boolean; override;
+	function GetPRecord: Pointer; override;
+    procedure FillPRecord(SetOfProp: TParamSetProp; arrstr: TArray<string>); override;
+    function GetCollType: TCollectionsType; override;
+	procedure ReadCmd(stream: TStream; vtrTemp: TVirtualStringTree; vCmd: PVirtualNode; CmdItem: TCmdItem);
+	procedure FillPropCL005(propindex: TPropertyIndex; stream: TStream);
+  end;
+
+
+  TCL005Coll = class(TBaseCollection)
+  private
+    FSearchingInt: Integer;
+    FSearchingValue: string;
+	tempItem: TCL005Item;
+    function GetItem(Index: Integer): TCL005Item;
+    procedure SetItem(Index: Integer; const Value: TCL005Item);
+    procedure SetSearchingValue(const Value: string);
+  public
+    FindedRes: TFindedResult;
+	linkOptions: TMappedLinkFile;
+	ListForFinder: TList<TCL005Item>;
+    ListCL005Search: TList<TCL005Item>;
+	PRecordSearch: ^TCL005Item.TRecCL005;
+    ArrPropSearch: TArray<TCL005Item.TPropertyIndex>;
+    ArrPropSearchClc: TArray<TCL005Item.TPropertyIndex>;
+	VisibleColl: TCL005Item.TSetProp;
+	ArrayPropOrder: TArray<TCL005Item.TPropertyIndex>;
+    ArrayPropOrderSearchOptions: TArray<integer>;
+
+    constructor Create(ItemClass: TCollectionItemClass);override;
+    destructor destroy; override;
+
+    function AddItem(ver: word):TCL005Item;
+	function AddItemForSearch: Integer;
+    procedure GetCell(Sender:TObject; const AColumn:TColumn; const ARow:Integer; var AValue:String);
+	procedure GetCellSearch(Sender:TObject; const AColumn:TColumn; const ARow:Integer; var AValue:String);
+    procedure GetCellDataPos(Sender:TObject; const AColumn:TColumn; const ARow:Integer; var AValue:String);override;
+    function PropType(propIndex: Word): TAspectTypeKind; override;
+    procedure GetCellList(Sender:TObject; const AColumn:TColumn; const ARow:Integer; var AValue:String);
+	procedure GetCellFromMap(propIndex: word; ARow: Integer; CL005: TCL005Item; var AValue:String);
+    procedure GetCellFromRecord(propIndex: word; CL005: TCL005Item; var AValue:String);
+	procedure GetCellListNodes(Sender:TObject; const AColumn:TColumn; const ARow:Integer; var AValue:String);override;
+    procedure SetCell(Sender:TObject; const AColumn:TColumn; const ARow:Integer; var AValue:String);
+	procedure GetFieldText(Sender:TObject; const ACol, ARow:Integer; var AFieldText:String);
+    procedure SetFieldText(Sender:TObject; const ACol, ARow:Integer; var AFieldText:String);
+    procedure SortByIndexValue(propIndex: TCL005Item.TPropertyIndex);
+    procedure SortByIndexInt;
+	procedure SortByIndexWord;
+    procedure SortByIndexAnsiString;
+	procedure DoColMoved(const Acol: TColumn; const OldPos, NewPos: Integer);override;
+
+	function DisplayName(propIndex: Word): string; override;
+	function DisplayLogicalName(flagIndex: Integer): string;
+	function RankSortOption(propIndex: Word): cardinal; override;
+    function FindRootCollOptionNode(): PVirtualNode; override;
+    function FindSearchFieldCollOptionGridNode(): PVirtualNode;
+    function FindSearchFieldCollOptionCOTNode(): PVirtualNode;
+    function FindSearchFieldCollOptionNode(): PVirtualNode;
+    function CreateRootCollOptionNode(): PVirtualNode;
+    procedure OrderFieldsSearch1(Grid: TTeeGrid);override;
+	function FieldCount: Integer; override;
+	procedure ShowGrid(Grid: TTeeGrid);override;
+	procedure ShowGridFromList(Grid: TTeeGrid; LST: TList<TCL005Item>);
+	procedure ShowSearchedGrid(Grid: TTeeGrid);
+    
+    procedure IndexValue(propIndex: TCL005Item.TPropertyIndex);
+	procedure IndexValueListNodes(propIndex:  TCL005Item.TPropertyIndex);
+    property Items[Index: Integer]: TCL005Item read GetItem write SetItem;
+	procedure OnGetTextDynFMX(sender: TObject; field: Word; index: Integer; datapos: Cardinal; var value: string);
+    property SearchingValue: string read FSearchingValue write SetSearchingValue;
+    procedure OnSetTextSearchEDT(Text: string; field: Word; Condition: TConditionSet);
+	procedure OnSetDateSearchEDT(Value: TDate; field: Word; Condition: TConditionSet);
+    procedure OnSetNumSearchEDT(Value: Integer; field: Word; Condition: TConditionSet);
+    procedure OnSetLogicalSearchEDT(Value: Boolean; field, logIndex: Word);
+    procedure OnSetTextSearchLog(Log: TlogicalCL005Set);
+	procedure CheckForSave(var cnt: Integer);
+	function IsCollVisible(PropIndex: Word): Boolean; override;
+    procedure ApplyVisibilityFromTree(RootNode: PVirtualNode);override;
+	function GetCollType: TCollectionsType; override;
+	function GetCollDelType: TCollectionsType; override;
+	procedure ImportXMLNzis(cl000: TObject);
+  end;
+
+implementation
+uses
+  Nzis.Nomen.baseCL000, System.Rtti;
+
+{ TCL005Item }
+
+constructor TCL005Item.Create(Collection: TCollection);
+begin
+  inherited;
+end;
+
+destructor TCL005Item.Destroy;
+begin
+  if Assigned(PRecord) then
+    Dispose(PRecord);
+  inherited;
+end;
+
+procedure TCL005Item.FillPRecord(SetOfProp: TParamSetProp; arrstr: TArray<string>);
+var
+  paramField: TParamProp;
+  setPropPat: TSetProp;
+  i: Integer;
+  PropertyIndex: TPropertyIndex;
+begin
+  i := 0;
+  for paramField in SetOfProp do
+  begin
+    PropertyIndex := TPropertyIndex(byte(paramField));
+    Include(Self.PRecord.setProp, PropertyIndex);
+    //case PropertyIndex of
+      //PatientNew_EGN: Self.PRecord.EGN := arrstr[i];
+    //end;
+    inc(i);
+  end;
+end;
+
+function TCL005Item.GetCollType: TCollectionsType;
+begin
+  Result := ctCL005;
+end;
+
+function TCL005Item.GetPRecord: Pointer;
+begin
+  result := Pointer(PRecord);
+end;
+
+procedure TCL005Item.InsertCL005;
+var
+  CollType: TCollectionsType;
+  metaPosition, dataPosition, PropPosition: cardinal;
+  FPosMetaData, FLenMetaData, FPosData, FLenData: Cardinal;
+  propIndx: TPropertyIndex;
+  pCardinalData: ^Cardinal;
+  pWordData: ^Word;
+begin
+  CollType := Aspects.Types.TCollectionsType.ctCL005;
+  pCardinalData := pointer(PByte(buf));
+  FPosMetaData := pCardinalData^;
+  pCardinalData := pointer(PByte(buf) + 4);
+  FLenMetaData := pCardinalData^;
+  metaPosition :=  FPosMetaData + FLenMetaData;
+
+  pCardinalData := pointer(PByte(buf) + 8);
+  FPosData := pCardinalData^;
+  pCardinalData := pointer(PByte(buf) + 12);
+  FLenData := pCardinalData^;
+  dataPosition :=  FPosData + FLenData;
+  SaveAnyStreamCommand(@PRecord.setProp, SizeOf(PRecord.setProp), CollType, toInsert, FVersion, metaPosition + 4);
+  case FVersion of
+    0:
+    begin
+      pWordData := pointer(PByte(buf) + metaPosition);
+      pWordData^  := word(CollType);
+      pWordData := pointer(PByte(buf) + metaPosition + 2);
+      pWordData^  := FVersion;
+      inc(metaPosition, 4);
+	  Self.DataPos := metaPosition;
+	  
+      for propIndx := Low(TPropertyIndex) to High(TPropertyIndex) do
+      begin
+        if Assigned(PRecord) and (propIndx in PRecord.setProp) then
+        begin
+          case propIndx of
+            CL005_ADDRESS_ACT: SaveData(PRecord.ADDRESS_ACT, PropPosition, metaPosition, dataPosition);
+            CL005_ADDRESS_DOGNZOK: SaveData(PRecord.ADDRESS_DOGNZOK, PropPosition, metaPosition, dataPosition);
+            CL005_ADRES: SaveData(PRecord.ADRES, PropPosition, metaPosition, dataPosition);
+            CL005_BANKA: SaveData(PRecord.BANKA, PropPosition, metaPosition, dataPosition);
+            CL005_BANKOW_KOD: SaveData(PRecord.BANKOW_KOD, PropPosition, metaPosition, dataPosition);
+            CL005_BULSTAT: SaveData(PRecord.BULSTAT, PropPosition, metaPosition, dataPosition);
+            CL005_COMPANYNAME: SaveData(PRecord.COMPANYNAME, PropPosition, metaPosition, dataPosition);
+            CL005_CONTRACT_DATE: SaveData(PRecord.CONTRACT_DATE, PropPosition, metaPosition, dataPosition);
+            CL005_CONTRACT_RZOK: SaveData(PRecord.CONTRACT_RZOK, PropPosition, metaPosition, dataPosition);
+            CL005_CONTRACT_TYPE: SaveData(PRecord.CONTRACT_TYPE, PropPosition, metaPosition, dataPosition);
+            CL005_DAN_NOMER: SaveData(PRecord.DAN_NOMER, PropPosition, metaPosition, dataPosition);
+            CL005_EGN: SaveData(PRecord.EGN, PropPosition, metaPosition, dataPosition);
+            CL005_FNAME: SaveData(PRecord.FNAME, PropPosition, metaPosition, dataPosition);
+            CL005_FULLNAME: SaveData(PRecord.FULLNAME, PropPosition, metaPosition, dataPosition);
+            CL005_INVOICECOMPANY: SaveData(PRecord.INVOICECOMPANY, PropPosition, metaPosition, dataPosition);
+            CL005_ISSUER_TYPE: SaveData(PRecord.ISSUER_TYPE, PropPosition, metaPosition, dataPosition);
+            CL005_IS_SAMOOSIG: SaveData(PRecord.IS_SAMOOSIG, PropPosition, metaPosition, dataPosition);
+            CL005_KOD_RAJON: SaveData(PRecord.KOD_RAJON, PropPosition, metaPosition, dataPosition);
+            CL005_KOD_RZOK: SaveData(PRecord.KOD_RZOK, PropPosition, metaPosition, dataPosition);
+            CL005_LNAME: SaveData(PRecord.LNAME, PropPosition, metaPosition, dataPosition);
+            CL005_LNCH: SaveData(PRecord.LNCH, PropPosition, metaPosition, dataPosition);
+            CL005_NAME: SaveData(PRecord.NAME, PropPosition, metaPosition, dataPosition);
+            CL005_NAS_MQSTO: SaveData(PRecord.NAS_MQSTO, PropPosition, metaPosition, dataPosition);
+            CL005_NEBL_USL: SaveData(PRecord.NEBL_USL, PropPosition, metaPosition, dataPosition);
+            CL005_NOMER_LZ: SaveData(PRecord.NOMER_LZ, PropPosition, metaPosition, dataPosition);
+            CL005_NOM_NAP: SaveData(PRecord.NOM_NAP, PropPosition, metaPosition, dataPosition);
+            CL005_NZOK_NOMER: SaveData(PRecord.NZOK_NOMER, PropPosition, metaPosition, dataPosition);
+            CL005_OBLAST: SaveData(PRecord.OBLAST, PropPosition, metaPosition, dataPosition);
+            CL005_OBSHTINA: SaveData(PRecord.OBSHTINA, PropPosition, metaPosition, dataPosition);
+            CL005_SELF_INSURED_DECLARATION: SaveData(PRecord.SELF_INSURED_DECLARATION, PropPosition, metaPosition, dataPosition);
+            CL005_SMETKA: SaveData(PRecord.SMETKA, PropPosition, metaPosition, dataPosition);
+            CL005_SNAME: SaveData(PRecord.SNAME, PropPosition, metaPosition, dataPosition);
+            CL005_UPRAVITEL: SaveData(PRecord.UPRAVITEL, PropPosition, metaPosition, dataPosition);
+            CL005_VIDFIRMA: SaveData(PRecord.VIDFIRMA, PropPosition, metaPosition, dataPosition);
+            CL005_VID_IDENT: SaveData(PRecord.VID_IDENT, PropPosition, metaPosition, dataPosition);
+            CL005_VID_PRAKTIKA: SaveData(PRecord.VID_PRAKTIKA, PropPosition, metaPosition, dataPosition);
+          end;
+        end
+        else
+        begin
+          SaveNull(metaPosition);
+        end;
+      end;
+      pCardinalData := pointer(PByte(buf) + 4);
+      pCardinalData^  := metaPosition - FPosMetaData;
+      pCardinalData := pointer(PByte(buf) + 12);
+      pCardinalData^  := dataPosition - FPosData;
+    end;
+  end;
+end;
+
+function  TCL005Item.IsFullFinded(buf: Pointer; FPosDataADB: Cardinal; coll: TCollection): Boolean;
+var
+  i: Integer;
+  pidx:  TCL005Item.TPropertyIndex;
+  cot: TConditionSet;
+  ATempItem: TCL005Item;
+begin
+  Result := True;
+  for i := 0 to Length(TCL005Coll(coll).ArrPropSearchClc) - 1 do
+  begin
+    if Result = false then
+      Exit;
+    pidx := TCL005Coll(coll).ArrPropSearchClc[i];
+	ATempItem := TCL005Coll(coll).ListForFinder.Items[0];
+    cot := ATempItem.ArrCondition[word(pidx)];
+    begin
+      case pidx of
+        CL005_ADDRESS_ACT: Result := IsFinded(ATempItem.PRecord.ADDRESS_ACT, buf, FPosDataADB, word(CL005_ADDRESS_ACT), cot);
+            CL005_ADDRESS_DOGNZOK: Result := IsFinded(ATempItem.PRecord.ADDRESS_DOGNZOK, buf, FPosDataADB, word(CL005_ADDRESS_DOGNZOK), cot);
+            CL005_ADRES: Result := IsFinded(ATempItem.PRecord.ADRES, buf, FPosDataADB, word(CL005_ADRES), cot);
+            CL005_BANKA: Result := IsFinded(ATempItem.PRecord.BANKA, buf, FPosDataADB, word(CL005_BANKA), cot);
+            CL005_BANKOW_KOD: Result := IsFinded(ATempItem.PRecord.BANKOW_KOD, buf, FPosDataADB, word(CL005_BANKOW_KOD), cot);
+            CL005_BULSTAT: Result := IsFinded(ATempItem.PRecord.BULSTAT, buf, FPosDataADB, word(CL005_BULSTAT), cot);
+            CL005_COMPANYNAME: Result := IsFinded(ATempItem.PRecord.COMPANYNAME, buf, FPosDataADB, word(CL005_COMPANYNAME), cot);
+            CL005_CONTRACT_DATE: Result := IsFinded(ATempItem.PRecord.CONTRACT_DATE, buf, FPosDataADB, word(CL005_CONTRACT_DATE), cot);
+            CL005_CONTRACT_RZOK: Result := IsFinded(ATempItem.PRecord.CONTRACT_RZOK, buf, FPosDataADB, word(CL005_CONTRACT_RZOK), cot);
+            CL005_CONTRACT_TYPE: Result := IsFinded(ATempItem.PRecord.CONTRACT_TYPE, buf, FPosDataADB, word(CL005_CONTRACT_TYPE), cot);
+            CL005_DAN_NOMER: Result := IsFinded(ATempItem.PRecord.DAN_NOMER, buf, FPosDataADB, word(CL005_DAN_NOMER), cot);
+            CL005_EGN: Result := IsFinded(ATempItem.PRecord.EGN, buf, FPosDataADB, word(CL005_EGN), cot);
+            CL005_FNAME: Result := IsFinded(ATempItem.PRecord.FNAME, buf, FPosDataADB, word(CL005_FNAME), cot);
+            CL005_FULLNAME: Result := IsFinded(ATempItem.PRecord.FULLNAME, buf, FPosDataADB, word(CL005_FULLNAME), cot);
+            CL005_INVOICECOMPANY: Result := IsFinded(ATempItem.PRecord.INVOICECOMPANY, buf, FPosDataADB, word(CL005_INVOICECOMPANY), cot);
+            CL005_ISSUER_TYPE: Result := IsFinded(ATempItem.PRecord.ISSUER_TYPE, buf, FPosDataADB, word(CL005_ISSUER_TYPE), cot);
+            CL005_IS_SAMOOSIG: Result := IsFinded(ATempItem.PRecord.IS_SAMOOSIG, buf, FPosDataADB, word(CL005_IS_SAMOOSIG), cot);
+            CL005_KOD_RAJON: Result := IsFinded(ATempItem.PRecord.KOD_RAJON, buf, FPosDataADB, word(CL005_KOD_RAJON), cot);
+            CL005_KOD_RZOK: Result := IsFinded(ATempItem.PRecord.KOD_RZOK, buf, FPosDataADB, word(CL005_KOD_RZOK), cot);
+            CL005_LNAME: Result := IsFinded(ATempItem.PRecord.LNAME, buf, FPosDataADB, word(CL005_LNAME), cot);
+            CL005_LNCH: Result := IsFinded(ATempItem.PRecord.LNCH, buf, FPosDataADB, word(CL005_LNCH), cot);
+            CL005_NAME: Result := IsFinded(ATempItem.PRecord.NAME, buf, FPosDataADB, word(CL005_NAME), cot);
+            CL005_NAS_MQSTO: Result := IsFinded(ATempItem.PRecord.NAS_MQSTO, buf, FPosDataADB, word(CL005_NAS_MQSTO), cot);
+            CL005_NEBL_USL: Result := IsFinded(ATempItem.PRecord.NEBL_USL, buf, FPosDataADB, word(CL005_NEBL_USL), cot);
+            CL005_NOMER_LZ: Result := IsFinded(ATempItem.PRecord.NOMER_LZ, buf, FPosDataADB, word(CL005_NOMER_LZ), cot);
+            CL005_NOM_NAP: Result := IsFinded(ATempItem.PRecord.NOM_NAP, buf, FPosDataADB, word(CL005_NOM_NAP), cot);
+            CL005_NZOK_NOMER: Result := IsFinded(ATempItem.PRecord.NZOK_NOMER, buf, FPosDataADB, word(CL005_NZOK_NOMER), cot);
+            CL005_OBLAST: Result := IsFinded(ATempItem.PRecord.OBLAST, buf, FPosDataADB, word(CL005_OBLAST), cot);
+            CL005_OBSHTINA: Result := IsFinded(ATempItem.PRecord.OBSHTINA, buf, FPosDataADB, word(CL005_OBSHTINA), cot);
+            CL005_SELF_INSURED_DECLARATION: Result := IsFinded(ATempItem.PRecord.SELF_INSURED_DECLARATION, buf, FPosDataADB, word(CL005_SELF_INSURED_DECLARATION), cot);
+            CL005_SMETKA: Result := IsFinded(ATempItem.PRecord.SMETKA, buf, FPosDataADB, word(CL005_SMETKA), cot);
+            CL005_SNAME: Result := IsFinded(ATempItem.PRecord.SNAME, buf, FPosDataADB, word(CL005_SNAME), cot);
+            CL005_UPRAVITEL: Result := IsFinded(ATempItem.PRecord.UPRAVITEL, buf, FPosDataADB, word(CL005_UPRAVITEL), cot);
+            CL005_VIDFIRMA: Result := IsFinded(ATempItem.PRecord.VIDFIRMA, buf, FPosDataADB, word(CL005_VIDFIRMA), cot);
+            CL005_VID_IDENT: Result := IsFinded(ATempItem.PRecord.VID_IDENT, buf, FPosDataADB, word(CL005_VID_IDENT), cot);
+            CL005_VID_PRAKTIKA: Result := IsFinded(ATempItem.PRecord.VID_PRAKTIKA, buf, FPosDataADB, word(CL005_VID_PRAKTIKA), cot);
+      end;
+    end;
+  end;
+end;
+
+procedure TCL005Item.ReadCmd(stream: TStream; vtrTemp: TVirtualStringTree;
+  vCmd: PVirtualNode; CmdItem: TCmdItem);
+var
+  delta: integer;
+  flds40: TLogicalData40;
+  propindexCL005: TCL005Item.TPropertyIndex;
+  vCmdProp: PVirtualNode;
+  dataCmdProp: PAspRec;
+begin
+  delta := sizeof(TLogicalData128) - sizeof(TLogicalData40);
+  stream.Read(flds40, sizeof(TLogicalData40));
+  stream.Position := stream.Position + delta;
+  New(self.PRecord);
+
+  self.PRecord.setProp := TCL005Item.TSetProp(flds40);// тука се записва какво има като полета
+
+
+  for propindexCL005 := Low(TCL005Item.TPropertyIndex) to High(TCL005Item.TPropertyIndex) do
+  begin
+    if not (propindexCL005 in self.PRecord.setProp) then
+      continue;
+    if vtrTemp <> nil then
+    begin
+      vCmdProp := vtrTemp.AddChild(vCmd, nil);
+      dataCmdProp := vtrTemp.GetNodeData(vCmdProp);
+      dataCmdProp.index := word(propindexCL005);
+      dataCmdProp.vid := vvPregled;
+    end;
+    self.FillPropCL005(propindexCL005, stream);
+  end;
+
+  CmdItem.AdbItem := self;
+end;
+
+procedure TCL005Item.FillPropCL005(propindex: TPropertyIndex;
+  stream: TStream);
+var
+  lenStr: Word;
+begin
+  case propindex of
+    CL005_ADDRESS_ACT:
+        begin
+          stream.Read(lenStr, 2);
+          SetLength(Self.PRecord.ADDRESS_ACT, lenStr);
+          stream.Read(Self.PRecord.ADDRESS_ACT[1], lenStr);
+        end;
+            CL005_ADDRESS_DOGNZOK:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.ADDRESS_DOGNZOK, lenStr);
+              stream.Read(Self.PRecord.ADDRESS_DOGNZOK[1], lenStr);
+            end;
+            CL005_ADRES:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.ADRES, lenStr);
+              stream.Read(Self.PRecord.ADRES[1], lenStr);
+            end;
+            CL005_BANKA:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.BANKA, lenStr);
+              stream.Read(Self.PRecord.BANKA[1], lenStr);
+            end;
+            CL005_BANKOW_KOD:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.BANKOW_KOD, lenStr);
+              stream.Read(Self.PRecord.BANKOW_KOD[1], lenStr);
+            end;
+            CL005_BULSTAT:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.BULSTAT, lenStr);
+              stream.Read(Self.PRecord.BULSTAT[1], lenStr);
+            end;
+            CL005_COMPANYNAME:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.COMPANYNAME, lenStr);
+              stream.Read(Self.PRecord.COMPANYNAME[1], lenStr);
+            end;
+            CL005_CONTRACT_DATE: stream.Read(Self.PRecord.CONTRACT_DATE, SizeOf(TDate));
+            CL005_CONTRACT_RZOK:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.CONTRACT_RZOK, lenStr);
+              stream.Read(Self.PRecord.CONTRACT_RZOK[1], lenStr);
+            end;
+            CL005_CONTRACT_TYPE: stream.Read(Self.PRecord.CONTRACT_TYPE, SizeOf(Word));
+            CL005_DAN_NOMER:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.DAN_NOMER, lenStr);
+              stream.Read(Self.PRecord.DAN_NOMER[1], lenStr);
+            end;
+            CL005_EGN:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.EGN, lenStr);
+              stream.Read(Self.PRecord.EGN[1], lenStr);
+            end;
+            CL005_FNAME:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.FNAME, lenStr);
+              stream.Read(Self.PRecord.FNAME[1], lenStr);
+            end;
+            CL005_FULLNAME:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.FULLNAME, lenStr);
+              stream.Read(Self.PRecord.FULLNAME[1], lenStr);
+            end;
+            CL005_INVOICECOMPANY: stream.Read(Self.PRecord.INVOICECOMPANY, SizeOf(Boolean));
+            CL005_ISSUER_TYPE: stream.Read(Self.PRecord.ISSUER_TYPE, SizeOf(Boolean));
+            CL005_IS_SAMOOSIG: stream.Read(Self.PRecord.IS_SAMOOSIG, SizeOf(Boolean));
+            CL005_KOD_RAJON:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.KOD_RAJON, lenStr);
+              stream.Read(Self.PRecord.KOD_RAJON[1], lenStr);
+            end;
+            CL005_KOD_RZOK:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.KOD_RZOK, lenStr);
+              stream.Read(Self.PRecord.KOD_RZOK[1], lenStr);
+            end;
+            CL005_LNAME:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.LNAME, lenStr);
+              stream.Read(Self.PRecord.LNAME[1], lenStr);
+            end;
+            CL005_LNCH:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.LNCH, lenStr);
+              stream.Read(Self.PRecord.LNCH[1], lenStr);
+            end;
+            CL005_NAME:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.NAME, lenStr);
+              stream.Read(Self.PRecord.NAME[1], lenStr);
+            end;
+            CL005_NAS_MQSTO:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.NAS_MQSTO, lenStr);
+              stream.Read(Self.PRecord.NAS_MQSTO[1], lenStr);
+            end;
+            CL005_NOMER_LZ:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.NOMER_LZ, lenStr);
+              stream.Read(Self.PRecord.NOMER_LZ[1], lenStr);
+            end;
+            CL005_NOM_NAP:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.NOM_NAP, lenStr);
+              stream.Read(Self.PRecord.NOM_NAP[1], lenStr);
+            end;
+            CL005_NZOK_NOMER:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.NZOK_NOMER, lenStr);
+              stream.Read(Self.PRecord.NZOK_NOMER[1], lenStr);
+            end;
+            CL005_OBLAST:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.OBLAST, lenStr);
+              stream.Read(Self.PRecord.OBLAST[1], lenStr);
+            end;
+            CL005_OBSHTINA:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.OBSHTINA, lenStr);
+              stream.Read(Self.PRecord.OBSHTINA[1], lenStr);
+            end;
+            CL005_SELF_INSURED_DECLARATION: stream.Read(Self.PRecord.SELF_INSURED_DECLARATION, SizeOf(Boolean));
+            CL005_SMETKA:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.SMETKA, lenStr);
+              stream.Read(Self.PRecord.SMETKA[1], lenStr);
+            end;
+            CL005_SNAME:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.SNAME, lenStr);
+              stream.Read(Self.PRecord.SNAME[1], lenStr);
+            end;
+            CL005_UPRAVITEL:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.UPRAVITEL, lenStr);
+              stream.Read(Self.PRecord.UPRAVITEL[1], lenStr);
+            end;
+            CL005_VIDFIRMA:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.VIDFIRMA, lenStr);
+              stream.Read(Self.PRecord.VIDFIRMA[1], lenStr);
+            end;
+            CL005_VID_IDENT:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.VID_IDENT, lenStr);
+              stream.Read(Self.PRecord.VID_IDENT[1], lenStr);
+            end;
+            CL005_VID_PRAKTIKA:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.VID_PRAKTIKA, lenStr);
+              stream.Read(Self.PRecord.VID_PRAKTIKA[1], lenStr);
+            end;
+  end;
+end;
+
+procedure TCL005Item.SaveCL005(Abuf: Pointer; var dataPosition: Cardinal);
+var
+  pCardinalData: PCardinal;
+  APosData, ALenData: Cardinal;
+begin
+  pCardinalData := pointer(PByte(ABuf) + 8);
+  APosData := pCardinalData^;
+  pCardinalData := pointer(PByte(ABuf) + 12);
+  ALenData := pCardinalData^;
+  dataPosition :=  ALenData + APosData;
+  SaveCL005(dataPosition);
+end;
+
+procedure TCL005Item.SaveCL005(var dataPosition: Cardinal);
+var
+  CollType: TCollectionsType;
+  metaPosition, PropPosition: cardinal;
+  propIndx: TPropertyIndex;
+begin
+  CollType := ctCL005;
+  SaveAnyStreamCommand(@PRecord.setProp, SizeOf(PRecord.setProp), CollType, toUpdate, FVersion, dataPosition);
+  case FVersion of
+    0:
+    begin
+      for propIndx := Low(TPropertyIndex) to High(TPropertyIndex) do
+      begin
+        if propIndx in PRecord.setProp then
+        begin
+          SaveHeaderData(PropPosition, dataPosition);
+          metaPosition := FDataPos + 4 * Integer(propIndx);
+          case propIndx of
+            CL005_ADDRESS_ACT: SaveData(PRecord.ADDRESS_ACT, PropPosition, metaPosition, dataPosition);
+            CL005_ADDRESS_DOGNZOK: SaveData(PRecord.ADDRESS_DOGNZOK, PropPosition, metaPosition, dataPosition);
+            CL005_ADRES: SaveData(PRecord.ADRES, PropPosition, metaPosition, dataPosition);
+            CL005_BANKA: SaveData(PRecord.BANKA, PropPosition, metaPosition, dataPosition);
+            CL005_BANKOW_KOD: SaveData(PRecord.BANKOW_KOD, PropPosition, metaPosition, dataPosition);
+            CL005_BULSTAT: SaveData(PRecord.BULSTAT, PropPosition, metaPosition, dataPosition);
+            CL005_COMPANYNAME: SaveData(PRecord.COMPANYNAME, PropPosition, metaPosition, dataPosition);
+            CL005_CONTRACT_DATE: SaveData(PRecord.CONTRACT_DATE, PropPosition, metaPosition, dataPosition);
+            CL005_CONTRACT_RZOK: SaveData(PRecord.CONTRACT_RZOK, PropPosition, metaPosition, dataPosition);
+            CL005_CONTRACT_TYPE: SaveData(PRecord.CONTRACT_TYPE, PropPosition, metaPosition, dataPosition);
+            CL005_DAN_NOMER: SaveData(PRecord.DAN_NOMER, PropPosition, metaPosition, dataPosition);
+            CL005_EGN: SaveData(PRecord.EGN, PropPosition, metaPosition, dataPosition);
+            CL005_FNAME: SaveData(PRecord.FNAME, PropPosition, metaPosition, dataPosition);
+            CL005_FULLNAME: SaveData(PRecord.FULLNAME, PropPosition, metaPosition, dataPosition);
+            CL005_INVOICECOMPANY: SaveData(PRecord.INVOICECOMPANY, PropPosition, metaPosition, dataPosition);
+            CL005_ISSUER_TYPE: SaveData(PRecord.ISSUER_TYPE, PropPosition, metaPosition, dataPosition);
+            CL005_IS_SAMOOSIG: SaveData(PRecord.IS_SAMOOSIG, PropPosition, metaPosition, dataPosition);
+            CL005_KOD_RAJON: SaveData(PRecord.KOD_RAJON, PropPosition, metaPosition, dataPosition);
+            CL005_KOD_RZOK: SaveData(PRecord.KOD_RZOK, PropPosition, metaPosition, dataPosition);
+            CL005_LNAME: SaveData(PRecord.LNAME, PropPosition, metaPosition, dataPosition);
+            CL005_LNCH: SaveData(PRecord.LNCH, PropPosition, metaPosition, dataPosition);
+            CL005_NAME: SaveData(PRecord.NAME, PropPosition, metaPosition, dataPosition);
+            CL005_NAS_MQSTO: SaveData(PRecord.NAS_MQSTO, PropPosition, metaPosition, dataPosition);
+            CL005_NEBL_USL: SaveData(PRecord.NEBL_USL, PropPosition, metaPosition, dataPosition);
+            CL005_NOMER_LZ: SaveData(PRecord.NOMER_LZ, PropPosition, metaPosition, dataPosition);
+            CL005_NOM_NAP: SaveData(PRecord.NOM_NAP, PropPosition, metaPosition, dataPosition);
+            CL005_NZOK_NOMER: SaveData(PRecord.NZOK_NOMER, PropPosition, metaPosition, dataPosition);
+            CL005_OBLAST: SaveData(PRecord.OBLAST, PropPosition, metaPosition, dataPosition);
+            CL005_OBSHTINA: SaveData(PRecord.OBSHTINA, PropPosition, metaPosition, dataPosition);
+            CL005_SELF_INSURED_DECLARATION: SaveData(PRecord.SELF_INSURED_DECLARATION, PropPosition, metaPosition, dataPosition);
+            CL005_SMETKA: SaveData(PRecord.SMETKA, PropPosition, metaPosition, dataPosition);
+            CL005_SNAME: SaveData(PRecord.SNAME, PropPosition, metaPosition, dataPosition);
+            CL005_UPRAVITEL: SaveData(PRecord.UPRAVITEL, PropPosition, metaPosition, dataPosition);
+            CL005_VIDFIRMA: SaveData(PRecord.VIDFIRMA, PropPosition, metaPosition, dataPosition);
+            CL005_VID_IDENT: SaveData(PRecord.VID_IDENT, PropPosition, metaPosition, dataPosition);
+            CL005_VID_PRAKTIKA: SaveData(PRecord.VID_PRAKTIKA, PropPosition, metaPosition, dataPosition);
+          end;
+        end
+        else
+        begin
+          //SaveNull(metaPosition);
+        end;
+      end;
+      Dispose(PRecord);
+      PRecord := nil;
+    end;
+  end;
+end;
+
+procedure TCL005Item.UpdateCL005;
+var
+  CollType: TCollectionsType;
+  metaPosition, dataPosition, PropPosition: cardinal;
+  propIndx: TPropertyIndex;
+begin
+  CollType := ctCL005;
+  case FVersion of
+    0:
+    begin
+      for propIndx := Low(TPropertyIndex) to High(TPropertyIndex) do
+      begin
+        if propIndx in PRecord.setProp then
+        begin
+          UpdateHeaderData(PropPosition, dataPosition);
+          metaPosition := FDataPos + 4 * Integer(propIndx);
+          case propIndx of
+            CL005_ADDRESS_ACT: UpdateData(PRecord.ADDRESS_ACT, PropPosition, metaPosition, dataPosition);
+            CL005_ADDRESS_DOGNZOK: UpdateData(PRecord.ADDRESS_DOGNZOK, PropPosition, metaPosition, dataPosition);
+            CL005_ADRES: UpdateData(PRecord.ADRES, PropPosition, metaPosition, dataPosition);
+            CL005_BANKA: UpdateData(PRecord.BANKA, PropPosition, metaPosition, dataPosition);
+            CL005_BANKOW_KOD: UpdateData(PRecord.BANKOW_KOD, PropPosition, metaPosition, dataPosition);
+            CL005_BULSTAT: UpdateData(PRecord.BULSTAT, PropPosition, metaPosition, dataPosition);
+            CL005_COMPANYNAME: UpdateData(PRecord.COMPANYNAME, PropPosition, metaPosition, dataPosition);
+            CL005_CONTRACT_DATE: UpdateData(PRecord.CONTRACT_DATE, PropPosition, metaPosition, dataPosition);
+            CL005_CONTRACT_RZOK: UpdateData(PRecord.CONTRACT_RZOK, PropPosition, metaPosition, dataPosition);
+            CL005_CONTRACT_TYPE: UpdateData(PRecord.CONTRACT_TYPE, PropPosition, metaPosition, dataPosition);
+            CL005_DAN_NOMER: UpdateData(PRecord.DAN_NOMER, PropPosition, metaPosition, dataPosition);
+            CL005_EGN: UpdateData(PRecord.EGN, PropPosition, metaPosition, dataPosition);
+            CL005_FNAME: UpdateData(PRecord.FNAME, PropPosition, metaPosition, dataPosition);
+            CL005_FULLNAME: UpdateData(PRecord.FULLNAME, PropPosition, metaPosition, dataPosition);
+            CL005_INVOICECOMPANY: UpdateData(PRecord.INVOICECOMPANY, PropPosition, metaPosition, dataPosition);
+            CL005_ISSUER_TYPE: UpdateData(PRecord.ISSUER_TYPE, PropPosition, metaPosition, dataPosition);
+            CL005_IS_SAMOOSIG: UpdateData(PRecord.IS_SAMOOSIG, PropPosition, metaPosition, dataPosition);
+            CL005_KOD_RAJON: UpdateData(PRecord.KOD_RAJON, PropPosition, metaPosition, dataPosition);
+            CL005_KOD_RZOK: UpdateData(PRecord.KOD_RZOK, PropPosition, metaPosition, dataPosition);
+            CL005_LNAME: UpdateData(PRecord.LNAME, PropPosition, metaPosition, dataPosition);
+            CL005_LNCH: UpdateData(PRecord.LNCH, PropPosition, metaPosition, dataPosition);
+            CL005_NAME: UpdateData(PRecord.NAME, PropPosition, metaPosition, dataPosition);
+            CL005_NAS_MQSTO: UpdateData(PRecord.NAS_MQSTO, PropPosition, metaPosition, dataPosition);
+            CL005_NEBL_USL: UpdateData(PRecord.NEBL_USL, PropPosition, metaPosition, dataPosition);
+            CL005_NOMER_LZ: UpdateData(PRecord.NOMER_LZ, PropPosition, metaPosition, dataPosition);
+            CL005_NOM_NAP: UpdateData(PRecord.NOM_NAP, PropPosition, metaPosition, dataPosition);
+            CL005_NZOK_NOMER: UpdateData(PRecord.NZOK_NOMER, PropPosition, metaPosition, dataPosition);
+            CL005_OBLAST: UpdateData(PRecord.OBLAST, PropPosition, metaPosition, dataPosition);
+            CL005_OBSHTINA: UpdateData(PRecord.OBSHTINA, PropPosition, metaPosition, dataPosition);
+            CL005_SELF_INSURED_DECLARATION: UpdateData(PRecord.SELF_INSURED_DECLARATION, PropPosition, metaPosition, dataPosition);
+            CL005_SMETKA: UpdateData(PRecord.SMETKA, PropPosition, metaPosition, dataPosition);
+            CL005_SNAME: UpdateData(PRecord.SNAME, PropPosition, metaPosition, dataPosition);
+            CL005_UPRAVITEL: UpdateData(PRecord.UPRAVITEL, PropPosition, metaPosition, dataPosition);
+            CL005_VIDFIRMA: UpdateData(PRecord.VIDFIRMA, PropPosition, metaPosition, dataPosition);
+            CL005_VID_IDENT: UpdateData(PRecord.VID_IDENT, PropPosition, metaPosition, dataPosition);
+            CL005_VID_PRAKTIKA: UpdateData(PRecord.VID_PRAKTIKA, PropPosition, metaPosition, dataPosition);
+          end;
+        end
+        else
+        begin
+          //SaveNull(metaPosition);
+        end;
+      end;
+      Dispose(PRecord);
+      PRecord := nil;
+    end;
+  end;
+end;
+
+{ TCL005Coll }
+
+function TCL005Coll.AddItem(ver: word): TCL005Item;
+begin
+  Result := TCL005Item(add);
+  Result.Version := ver;
+  case ver of // в зависимост от версията на записа
+    0:
+    begin
+    end;
+  end;
+end;
+
+function TCL005Coll.AddItemForSearch: Integer;
+var
+  ItemForSearch: TCL005Item;
+begin
+  ItemForSearch := TCL005Item.Create(nil);
+  SetLength(ItemForSearch.ArrCondition, self.FieldCount);
+
+  New(ItemForSearch.PRecord);
+  ItemForSearch.PRecord.setProp := [];
+  ItemForSearch.PRecord.Logical := [];
+  Result := ListForFinder.Add(ItemForSearch);
+end;
+
+procedure TCL005Coll.ApplyVisibilityFromTree(RootNode: PVirtualNode);
+var
+  run: PVirtualNode;
+  data: PAspRec;
+begin
+  VisibleColl := [];
+
+  run := RootNode.FirstChild;
+  while run <> nil do
+  begin
+    data := PAspRec(PByte(run) + lenNode);
+
+    if run.CheckState = csCheckedNormal then
+      Include(VisibleColl, TCL005Item.TPropertyIndex(run.Dummy - 1));
+
+    run := run.NextSibling;
+  end;
+end;
+
+
+function TCL005Coll.CreateRootCollOptionNode(): PVirtualNode;
+var
+  NodeRoot, vOptionSearchGrid, vOptionSearchCOT, run: PVirtualNode;
+  linkPos: Cardinal;
+  pCardinalData: PCardinal;
+  i: Integer;
+begin
+  NodeRoot := Pointer(PByte(linkOptions.Buf) + 100);
+  linkOptions.AddNewNode(vvCL005Root, 0, NodeRoot , amAddChildLast, result, linkPos);
+  linkOptions.AddNewNode(vvOptionSearchGrid, 0, Result , amAddChildLast, vOptionSearchGrid, linkPos);
+  linkOptions.AddNewNode(vvOptionSearchCot, 0, Result , amAddChildLast, vOptionSearchCOT, linkPos);
+
+  vOptionSearchGrid.CheckType := ctTriStateCheckBox;
+
+  if vOptionSearchGrid.ChildCount <> FieldCount then
+  begin
+    for i := 0 to FieldCount - 1 do
+    begin
+      linkOptions.AddNewNode(vvFieldSearchGridOption, 0, vOptionSearchGrid , amAddChildLast, run, linkPos);
+      run.Dummy := i + 1;
+	  run.CheckType := ctCheckBox;
+      run.CheckState := csCheckedNormal;
+    end;
+  end
+  else
+  begin
+    // при евентуално добавена колонка...
+  end;  
+end;
+
+procedure TCL005Coll.CheckForSave(var cnt: Integer);
+var
+  i: Integer;
+  tempItem: TCL005Item;
+begin
+  for i := 0 to Self.Count - 1 do
+  begin
+    tempItem := Items[i];
+    if tempItem.PRecord <> nil then
+    begin
+	  // === проверки за запазване (CheckForSave) ===
+
+  if (CL005_ADDRESS_ACT in tempItem.PRecord.setProp) and (tempItem.PRecord.ADDRESS_ACT <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_ADDRESS_ACT))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_ADDRESS_DOGNZOK in tempItem.PRecord.setProp) and (tempItem.PRecord.ADDRESS_DOGNZOK <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_ADDRESS_DOGNZOK))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_ADRES in tempItem.PRecord.setProp) and (tempItem.PRecord.ADRES <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_ADRES))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_BANKA in tempItem.PRecord.setProp) and (tempItem.PRecord.BANKA <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_BANKA))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_BANKOW_KOD in tempItem.PRecord.setProp) and (tempItem.PRecord.BANKOW_KOD <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_BANKOW_KOD))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_BULSTAT in tempItem.PRecord.setProp) and (tempItem.PRecord.BULSTAT <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_BULSTAT))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_COMPANYNAME in tempItem.PRecord.setProp) and (tempItem.PRecord.COMPANYNAME <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_COMPANYNAME))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_CONTRACT_DATE in tempItem.PRecord.setProp) and (tempItem.PRecord.CONTRACT_DATE <> Self.getDateMap(tempItem.DataPos, word(CL005_CONTRACT_DATE))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_CONTRACT_RZOK in tempItem.PRecord.setProp) and (tempItem.PRecord.CONTRACT_RZOK <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_CONTRACT_RZOK))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_CONTRACT_TYPE in tempItem.PRecord.setProp) and (tempItem.PRecord.CONTRACT_TYPE <> Self.getIntMap(tempItem.DataPos, word(CL005_CONTRACT_TYPE))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_DAN_NOMER in tempItem.PRecord.setProp) and (tempItem.PRecord.DAN_NOMER <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_DAN_NOMER))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_EGN in tempItem.PRecord.setProp) and (tempItem.PRecord.EGN <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_EGN))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_FNAME in tempItem.PRecord.setProp) and (tempItem.PRecord.FNAME <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_FNAME))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_FULLNAME in tempItem.PRecord.setProp) and (tempItem.PRecord.FULLNAME <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_FULLNAME))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_INVOICECOMPANY in tempItem.PRecord.setProp) and (tempItem.PRecord.INVOICECOMPANY <> Self.getCardinalMap(tempItem.DataPos, word(CL005_INVOICECOMPANY))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_ISSUER_TYPE in tempItem.PRecord.setProp) and (tempItem.PRecord.ISSUER_TYPE <> Self.getCardinalMap(tempItem.DataPos, word(CL005_ISSUER_TYPE))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_IS_SAMOOSIG in tempItem.PRecord.setProp) and (tempItem.PRecord.IS_SAMOOSIG <> Self.getCardinalMap(tempItem.DataPos, word(CL005_IS_SAMOOSIG))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_KOD_RAJON in tempItem.PRecord.setProp) and (tempItem.PRecord.KOD_RAJON <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_KOD_RAJON))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_KOD_RZOK in tempItem.PRecord.setProp) and (tempItem.PRecord.KOD_RZOK <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_KOD_RZOK))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_LNAME in tempItem.PRecord.setProp) and (tempItem.PRecord.LNAME <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_LNAME))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_LNCH in tempItem.PRecord.setProp) and (tempItem.PRecord.LNCH <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_LNCH))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_NAME in tempItem.PRecord.setProp) and (tempItem.PRecord.NAME <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_NAME))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_NAS_MQSTO in tempItem.PRecord.setProp) and (tempItem.PRecord.NAS_MQSTO <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_NAS_MQSTO))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_NEBL_USL in tempItem.PRecord.setProp) and (Abs(tempItem.PRecord.NEBL_USL - Self.getDoubleMap(tempItem.DataPos, word(CL005_NEBL_USL))) > 0.000001) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_NOMER_LZ in tempItem.PRecord.setProp) and (tempItem.PRecord.NOMER_LZ <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_NOMER_LZ))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_NOM_NAP in tempItem.PRecord.setProp) and (tempItem.PRecord.NOM_NAP <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_NOM_NAP))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_NZOK_NOMER in tempItem.PRecord.setProp) and (tempItem.PRecord.NZOK_NOMER <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_NZOK_NOMER))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_OBLAST in tempItem.PRecord.setProp) and (tempItem.PRecord.OBLAST <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_OBLAST))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_OBSHTINA in tempItem.PRecord.setProp) and (tempItem.PRecord.OBSHTINA <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_OBSHTINA))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_SELF_INSURED_DECLARATION in tempItem.PRecord.setProp) and (tempItem.PRecord.SELF_INSURED_DECLARATION <> Self.getCardinalMap(tempItem.DataPos, word(CL005_SELF_INSURED_DECLARATION))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_SMETKA in tempItem.PRecord.setProp) and (tempItem.PRecord.SMETKA <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_SMETKA))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_SNAME in tempItem.PRecord.setProp) and (tempItem.PRecord.SNAME <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_SNAME))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_UPRAVITEL in tempItem.PRecord.setProp) and (tempItem.PRecord.UPRAVITEL <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_UPRAVITEL))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_VIDFIRMA in tempItem.PRecord.setProp) and (tempItem.PRecord.VIDFIRMA <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_VIDFIRMA))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_VID_IDENT in tempItem.PRecord.setProp) and (tempItem.PRecord.VID_IDENT <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_VID_IDENT))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL005_VID_PRAKTIKA in tempItem.PRecord.setProp) and (tempItem.PRecord.VID_PRAKTIKA <> Self.getAnsiStringMap(tempItem.DataPos, word(CL005_VID_PRAKTIKA))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+    end;
+  end;
+end;
+
+
+constructor TCL005Coll.Create(ItemClass: TCollectionItemClass);
+var
+  i: Integer;
+begin
+  inherited;
+  tempItem := TCL005Item.Create(nil);
+  ListCL005Search := TList<TCL005Item>.Create;
+  ListForFinder := TList<TCL005Item>.Create;
+  New(PRecordSearch);
+  PRecordSearch.setProp := [];
+  SetLength(ArrayPropOrderSearchOptions, FieldCount + 1);
+  ArrayPropOrderSearchOptions[0] := FieldCount;
+  for i := 1 to FieldCount do
+  begin
+    ArrayPropOrderSearchOptions[i] := i;
+  end;
+
+end;
+
+destructor TCL005Coll.destroy;
+begin
+  FreeAndNil(ListCL005Search);
+  FreeAndNil(ListForFinder);
+  FreeAndNil(TempItem);
+  Dispose(PRecordSearch);
+  PRecordSearch := nil;
+  inherited;
+end;
+
+function TCL005Coll.DisplayName(propIndex: Word): string;
+begin
+  inherited;
+  case TCL005Item.TPropertyIndex(propIndex) of
+    CL005_ADDRESS_ACT: Result := 'ADDRESS_ACT';
+    CL005_ADDRESS_DOGNZOK: Result := 'ADDRESS_DOGNZOK';
+    CL005_ADRES: Result := 'ADRES';
+    CL005_BANKA: Result := 'BANKA';
+    CL005_BANKOW_KOD: Result := 'BANKOW_KOD';
+    CL005_BULSTAT: Result := 'BULSTAT';
+    CL005_COMPANYNAME: Result := 'COMPANYNAME';
+    CL005_CONTRACT_DATE: Result := 'CONTRACT_DATE';
+    CL005_CONTRACT_RZOK: Result := 'CONTRACT_RZOK';
+    CL005_CONTRACT_TYPE: Result := 'CONTRACT_TYPE';
+    CL005_DAN_NOMER: Result := 'DAN_NOMER';
+    CL005_EGN: Result := 'EGN';
+    CL005_FNAME: Result := 'FNAME';
+    CL005_FULLNAME: Result := 'FULLNAME';
+    CL005_INVOICECOMPANY: Result := 'INVOICECOMPANY';
+    CL005_ISSUER_TYPE: Result := 'ISSUER_TYPE';
+    CL005_IS_SAMOOSIG: Result := 'IS_SAMOOSIG';
+    CL005_KOD_RAJON: Result := 'KOD_RAJON';
+    CL005_KOD_RZOK: Result := 'KOD_RZOK';
+    CL005_LNAME: Result := 'LNAME';
+    CL005_LNCH: Result := 'LNCH';
+    CL005_NAME: Result := 'NAME';
+    CL005_NAS_MQSTO: Result := 'NAS_MQSTO';
+    CL005_NEBL_USL: Result := 'NEBL_USL';
+    CL005_NOMER_LZ: Result := 'NOMER_LZ';
+    CL005_NOM_NAP: Result := 'NOM_NAP';
+    CL005_NZOK_NOMER: Result := 'NZOK_NOMER';
+    CL005_OBLAST: Result := 'OBLAST';
+    CL005_OBSHTINA: Result := 'OBSHTINA';
+    CL005_SELF_INSURED_DECLARATION: Result := 'SELF_INSURED_DECLARATION';
+    CL005_SMETKA: Result := 'SMETKA';
+    CL005_SNAME: Result := 'SNAME';
+    CL005_UPRAVITEL: Result := 'UPRAVITEL';
+    CL005_VIDFIRMA: Result := 'VIDFIRMA';
+    CL005_VID_IDENT: Result := 'VID_IDENT';
+    CL005_VID_PRAKTIKA: Result := 'VID_PRAKTIKA';
+  end;
+end;
+
+function TCL005Coll.DisplayLogicalName(flagIndex: Integer): string;
+begin
+  case flagIndex of
+
+  else
+    Result := '???';
+  end;
+end;
+
+
+procedure TCL005Coll.DoColMoved(const Acol: TColumn; const OldPos, NewPos: Integer);
+var
+  FieldCollOptionNode, run: PVirtualNode;
+  pSource, pTarget: PVirtualNode;
+begin
+  inherited;
+  if linkOptions = nil then Exit;
+
+  FieldCollOptionNode := FindSearchFieldCollOptionGridNode;
+  run := FieldCollOptionNode.FirstChild;
+  pSource := nil;
+  pTarget := nil;
+  while run <> nil do
+  begin
+    if run.Index = NewPos - 1 then
+    begin
+      pTarget := run;
+    end;
+    if run.index = OldPos - 1 then
+    begin
+      pSource := run;
+    end;
+    run := run.NextSibling;
+  end;
+
+  if pTarget = nil then Exit;
+  if pSource = nil then Exit;
+  //ShowMessage(Format('pSource = %d, pTarget = %d', [pSource.Index, pTarget.Index]));
+  if pSource.Index < pTarget.Index then
+  begin
+    linkOptions.FVTR.MoveTo(pSource, pTarget, amInsertAfter, False);
+  end
+  else
+  begin
+    linkOptions.FVTR.MoveTo(pSource, pTarget, amInsertBefore, False);
+  end;
+  run := FieldCollOptionNode.FirstChild;
+  while run <> nil do
+  begin
+    ArrayPropOrderSearchOptions[run.index + 1] :=  run.Dummy - 1;
+    run := run.NextSibling;
+  end; 
+end;
+
+
+function TCL005Coll.FieldCount: Integer; 
+begin
+  inherited;
+  Result := 36;
+end;
+
+function TCL005Coll.FindRootCollOptionNode(): PVirtualNode;
+var
+  linkPos: Cardinal;
+  pCardinalData: PCardinal;
+  PosLinkData: Cardinal;
+  Run: PVirtualNode;
+  data: PAspRec;
+begin
+  Result := nil;
+  linkPos := 100;
+  pCardinalData := pointer(PByte(linkOptions.Buf));
+  PosLinkData := pCardinalData^;
+
+  while linkPos <= PosLinkData do
+  begin
+    Run := pointer(PByte(linkOptions.Buf) + linkpos);
+    data := Pointer(PByte(Run)+ lenNode);
+    if data.vid = vvCL005Root then
+    begin
+      Result := Run;
+	  data := Pointer(PByte(Result)+ lenNode);
+      data.DataPos := Cardinal(Self);
+      Exit;
+    end;
+    inc(linkPos, LenData);
+  end;
+  if Result = nil then
+    Result := CreateRootCollOptionNode;
+  if Result <> nil then
+  begin
+    data := Pointer(PByte(Result)+ lenNode);
+    data.DataPos := Cardinal(Self);
+  end;
+end;
+
+function TCL005Coll.FindSearchFieldCollOptionCOTNode: PVirtualNode;
+var
+  run, vRootPregOptions: PVirtualNode;
+  dataRun: PAspRec;
+begin
+  vRootPregOptions := self.FindRootCollOptionNode();
+  result := nil;
+
+  run := vRootPregOptions.FirstChild;
+  while run <> nil do
+  begin
+    dataRun := pointer(PByte(run) + lenNode);
+    case dataRun.vid of
+      vvOptionSearchCot: result := run;
+    end;
+    run := run.NextSibling;
+  end;
+end;
+
+function TCL005Coll.FindSearchFieldCollOptionGridNode: PVirtualNode;
+var
+  run, vRootPregOptions: PVirtualNode;
+  dataRun: PAspRec;
+begin
+  vRootPregOptions := self.FindRootCollOptionNode();
+
+  result := nil;
+
+  run := vRootPregOptions.FirstChild;
+  while run <> nil do
+  begin
+    dataRun := pointer(PByte(run) + lenNode);
+    case dataRun.vid of
+      vvOptionSearchGrid: result := run;
+    end;
+    run := run.NextSibling;
+  end;
+end;
+
+function TCL005Coll.FindSearchFieldCollOptionNode(): PVirtualNode;
+var
+  linkPos: Cardinal;
+  run, vOptionSearchGrid, vOptionSearchCOT, vRootPregOptions: PVirtualNode;
+  i: Integer;
+  dataRun: PAspRec;
+begin
+  vRootPregOptions := self.FindRootCollOptionNode();
+  if vRootPregOptions = nil then
+    vRootPregOptions := CreateRootCollOptionNode;
+  vOptionSearchGrid := nil;
+  vOptionSearchCOT := nil;
+
+  run := vRootPregOptions.FirstChild;
+  while run <> nil do
+  begin
+    dataRun := pointer(PByte(run) + lenNode);
+    case dataRun.vid of
+      vvOptionSearchGrid: vOptionSearchGrid := run;
+      vvOptionSearchCot: vOptionSearchCOT := run;
+    end;
+
+    run := run.NextSibling;
+  end;
+  if vOptionSearchGrid = nil then
+  begin
+    linkOptions.AddNewNode(vvOptionSearchGrid, 0, vRootPregOptions , amAddChildLast, vOptionSearchGrid, linkPos);
+  end;
+  if vOptionSearchCOT = nil then
+  begin
+    linkOptions.AddNewNode(vvOptionSearchCot, 0, vRootPregOptions , amAddChildLast, vOptionSearchGrid, linkPos);
+  end;
+
+  Result := vOptionSearchGrid;
+  if vOptionSearchGrid.ChildCount <> FieldCount then
+  begin
+    for i := 0 to FieldCount - 1 do
+    begin
+      linkOptions.AddNewNode(vvFieldSearchGridOption, 0, vOptionSearchGrid , amAddChildLast, run, linkPos);
+      run.Dummy := i;
+    end;
+  end
+  else
+  begin
+    // при евентуално добавена колонка...
+  end;
+end;
+
+procedure TCL005Coll.GetCell(Sender: TObject; const AColumn: TColumn; const ARow: Integer; var AValue: String);
+var
+  CL005: TCL005Item;
+  ACol: Integer;
+  prop: TCL005Item.TPropertyIndex;
+begin
+  ACol := TVirtualModeData(Sender).IndexOf(AColumn);
+  if Count = 0 then Exit;
+
+  CL005 := Items[ARow];
+  prop := TCL005Item.TPropertyIndex(ACol);
+  if Assigned(CL005.PRecord) and (prop in CL005.PRecord.setProp) then
+  begin
+    GetCellFromRecord(ACol, CL005, AValue);
+  end
+  else
+  begin
+    GetCellFromMap(ACol, ARow, CL005, AValue);
+  end;
+end;
+
+procedure TCL005Coll.GetCellDataPos(Sender: TObject; const AColumn: TColumn; const ARow:Integer; var AValue: String);
+var
+  RowSelect: Integer;
+  prop: TCL005Item.TPropertyIndex;
+begin
+  inherited;
+ 
+  if ARow < 0 then
+  begin
+    AValue := 'hhhh';
+    Exit;
+  end;
+  try
+    if (ListDataPos.count - 1 - Self.offsetTop - Self.offsetBottom) < ARow then exit;
+    RowSelect := ARow + Self.offsetTop;
+    TempItem.DataPos := PAspRec(Pointer(PByte(ListDataPos[ARow]) + lenNode)).DataPos;
+  except
+    AValue := 'ddddd';
+    Exit;
+  end;
+
+  GetCellFromMap(ArrayPropOrderSearchOptions[AColumn.Index], RowSelect, TempItem, AValue);
+end;
+
+procedure TCL005Coll.GetCellFromRecord(propIndex: word; CL005: TCL005Item; var AValue: String);
+var
+  str: string;
+begin
+  case TCL005Item.TPropertyIndex(propIndex) of
+    CL005_ADDRESS_ACT: str := (CL005.PRecord.ADDRESS_ACT);
+    CL005_ADDRESS_DOGNZOK: str := (CL005.PRecord.ADDRESS_DOGNZOK);
+    CL005_ADRES: str := (CL005.PRecord.ADRES);
+    CL005_BANKA: str := (CL005.PRecord.BANKA);
+    CL005_BANKOW_KOD: str := (CL005.PRecord.BANKOW_KOD);
+    CL005_BULSTAT: str := (CL005.PRecord.BULSTAT);
+    CL005_COMPANYNAME: str := (CL005.PRecord.COMPANYNAME);
+    CL005_CONTRACT_DATE: str := AspDateToStr(CL005.PRecord.CONTRACT_DATE);
+    CL005_CONTRACT_RZOK: str := (CL005.PRecord.CONTRACT_RZOK);
+    CL005_CONTRACT_TYPE: str := inttostr(CL005.PRecord.CONTRACT_TYPE);
+    CL005_DAN_NOMER: str := (CL005.PRecord.DAN_NOMER);
+    CL005_EGN: str := (CL005.PRecord.EGN);
+    CL005_FNAME: str := (CL005.PRecord.FNAME);
+    CL005_FULLNAME: str := (CL005.PRecord.FULLNAME);
+    CL005_INVOICECOMPANY: str := BoolToStr(CL005.PRecord.INVOICECOMPANY, True);
+    CL005_ISSUER_TYPE: str := BoolToStr(CL005.PRecord.ISSUER_TYPE, True);
+    CL005_IS_SAMOOSIG: str := BoolToStr(CL005.PRecord.IS_SAMOOSIG, True);
+    CL005_KOD_RAJON: str := (CL005.PRecord.KOD_RAJON);
+    CL005_KOD_RZOK: str := (CL005.PRecord.KOD_RZOK);
+    CL005_LNAME: str := (CL005.PRecord.LNAME);
+    CL005_LNCH: str := (CL005.PRecord.LNCH);
+    CL005_NAME: str := (CL005.PRecord.NAME);
+    CL005_NAS_MQSTO: str := (CL005.PRecord.NAS_MQSTO);
+    CL005_NEBL_USL: str := FloatToStr(CL005.PRecord.NEBL_USL);
+    CL005_NOMER_LZ: str := (CL005.PRecord.NOMER_LZ);
+    CL005_NOM_NAP: str := (CL005.PRecord.NOM_NAP);
+    CL005_NZOK_NOMER: str := (CL005.PRecord.NZOK_NOMER);
+    CL005_OBLAST: str := (CL005.PRecord.OBLAST);
+    CL005_OBSHTINA: str := (CL005.PRecord.OBSHTINA);
+    CL005_SELF_INSURED_DECLARATION: str := BoolToStr(CL005.PRecord.SELF_INSURED_DECLARATION, True);
+    CL005_SMETKA: str := (CL005.PRecord.SMETKA);
+    CL005_SNAME: str := (CL005.PRecord.SNAME);
+    CL005_UPRAVITEL: str := (CL005.PRecord.UPRAVITEL);
+    CL005_VIDFIRMA: str := (CL005.PRecord.VIDFIRMA);
+    CL005_VID_IDENT: str := (CL005.PRecord.VID_IDENT);
+    CL005_VID_PRAKTIKA: str := (CL005.PRecord.VID_PRAKTIKA);
+  else
+    begin
+      str := '';
+    end;
+  end;
+  AValue := str;
+end;
+
+procedure TCL005Coll.GetCellList(Sender: TObject; const AColumn: TColumn; const ARow: Integer; var AValue: String);
+var
+  AtempItem: TCL005Item;
+  ACol: Integer;
+  prop: TCL005Item.TPropertyIndex;
+begin
+  ACol := TVirtualModeData(Sender).IndexOf(AColumn);
+  if ListForFinder.Count = 0 then Exit;
+
+  AtempItem := ListForFinder[ARow];
+  prop := TCL005Item.TPropertyIndex(ACol);
+  if Assigned(AtempItem.PRecord) and (prop in AtempItem.PRecord.setProp) then
+  begin
+    GetCellFromRecord(ACol, AtempItem, AValue);
+  end
+  else
+  begin
+    GetCellFromMap(ACol, ARow, AtempItem, AValue);
+  end;
+end;
+
+procedure TCL005Coll.GetCellListNodes(Sender: TObject; const AColumn: TColumn; const ARow: Integer; var AValue: String);
+var
+  ACol: Integer;
+  prop: TCL005Item.TPropertyIndex;
+begin
+  inherited;
+  ACol := TVirtualModeData(Sender).IndexOf(AColumn);
+  if (ListNodes.count - 1) < ARow then exit;
+  
+  TempItem.DataPos := ListNodes[ARow].DataPos;
+  prop := TCL005Item.TPropertyIndex(ACol);
+  GetCellFromMap(ACol, ARow, TempItem, AValue);
+end;
+
+procedure TCL005Coll.GetCellSearch(Sender: TObject; const AColumn: TColumn; const ARow: Integer; var AValue: String);
+var
+  CL005: TCL005Item;
+  ACol: Integer;
+  prop: TCL005Item.TPropertyIndex;
+begin
+  ACol := TVirtualModeData(Sender).IndexOf(AColumn);
+  if Count = 0 then Exit;
+
+  CL005 := ListCL005Search[ARow];
+  prop := TCL005Item.TPropertyIndex(ACol);
+  if Assigned(CL005.PRecord) and (prop in CL005.PRecord.setProp) then
+  begin
+    GetCellFromRecord(ACol, CL005, AValue);
+  end
+  else
+  begin
+    GetCellFromMap(ACol, ARow, CL005, AValue);
+  end;
+end;
+
+function TCL005Coll.GetCollType: TCollectionsType;
+begin
+  Result := ctCL005;
+end;
+
+function TCL005Coll.GetCollDelType: TCollectionsType;
+begin
+  Result := ctCL005Del;
+end;
+
+procedure TCL005Coll.GetFieldText(Sender: TObject; const ACol, ARow: Integer; var AFieldText: String);
+var
+  CL005: TCL005Item;
+  prop: TCL005Item.TPropertyIndex;
+begin
+  if Count = 0 then Exit;
+
+  CL005 := Items[ARow];
+  prop := TCL005Item.TPropertyIndex(ACol);
+  if Assigned(CL005.PRecord) and (prop in CL005.PRecord.setProp) then
+  begin
+    GetCellFromRecord(ACol, CL005, AFieldText);
+  end
+  else
+  begin
+    GetCellFromMap(ACol, ARow, CL005, AFieldText);
+  end;
+end;
+
+procedure TCL005Coll.GetCellFromMap(propIndex: word; ARow: Integer; CL005: TCL005Item; var AValue: String);
+var
+  str: string;
+  len: Word;
+  int: PInt;
+  wrd: PWord;
+  bt: PByte;
+  pstr: pchar;
+  pDbl: PDouble;
+  pbl: PBoolean;
+begin
+  case TCL005Item.TPropertyIndex(propIndex) of
+    CL005_ADDRESS_ACT: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_ADDRESS_DOGNZOK: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_ADRES: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_BANKA: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_BANKOW_KOD: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_BULSTAT: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_COMPANYNAME: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_CONTRACT_DATE: str :=  AspDateToStr(CL005.getDateMap(Self.Buf, Self.posData, propIndex));
+    CL005_CONTRACT_RZOK: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_CONTRACT_TYPE: str :=  inttostr(CL005.getWordMap(Self.Buf, Self.posData, propIndex));
+    CL005_DAN_NOMER: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_EGN: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_FNAME: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_FULLNAME: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_INVOICECOMPANY: str :=  BoolToStr(CL005.getBooleanMap(Self.Buf, Self.posData, propIndex), true);
+    CL005_ISSUER_TYPE: str :=  BoolToStr(CL005.getBooleanMap(Self.Buf, Self.posData, propIndex), true);
+    CL005_IS_SAMOOSIG: str :=  BoolToStr(CL005.getBooleanMap(Self.Buf, Self.posData, propIndex), true);
+    CL005_KOD_RAJON: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_KOD_RZOK: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_LNAME: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_LNCH: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_NAME: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_NAS_MQSTO: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_NOMER_LZ: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_NOM_NAP: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_NZOK_NOMER: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_OBLAST: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_OBSHTINA: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_SELF_INSURED_DECLARATION: str :=  BoolToStr(CL005.getBooleanMap(Self.Buf, Self.posData, propIndex), true);
+    CL005_SMETKA: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_SNAME: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_UPRAVITEL: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_VIDFIRMA: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_VID_IDENT: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL005_VID_PRAKTIKA: str :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+  else
+    begin
+      str := IntToStr(ARow + 1);
+    end;
+  end;
+  AValue := str;
+end;
+
+function TCL005Coll.GetItem(Index: Integer): TCL005Item;
+begin
+  Result := TCL005Item(inherited GetItem(Index));
+end;
+
+
+procedure TCL005Coll.IndexValue(propIndex: TCL005Item.TPropertyIndex);
+var
+  i: Integer;
+  len: Word;
+  TempItem: TCL005Item;
+begin
+  for i := 0 to self.Count - 1 do
+  begin
+    TempItem := self.Items[i];
+    case propIndex of
+      CL005_ADDRESS_ACT:
+begin
+  TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+  if TempItem.IndexAnsiStr <> nil then
+  begin
+    TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+  end
+  else
+    TempItem.IndexAnsiStr1 := '';
+end;
+      CL005_ADDRESS_DOGNZOK:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_ADRES:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_BANKA:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_BANKOW_KOD:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_BULSTAT:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_COMPANYNAME:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_CONTRACT_RZOK:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_CONTRACT_TYPE: TempItem.IndexWord :=  TempItem.getPWordMap(Self.Buf, self.posData, word(propIndex))^;
+      CL005_DAN_NOMER:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_EGN:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_FNAME:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_FULLNAME:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_KOD_RAJON:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_KOD_RZOK:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_LNAME:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_LNCH:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_NAME:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_NAS_MQSTO:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_NOMER_LZ:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_NOM_NAP:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_NZOK_NOMER:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_OBLAST:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_OBSHTINA:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_SMETKA:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_SNAME:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_UPRAVITEL:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_VIDFIRMA:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_VID_IDENT:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL005_VID_PRAKTIKA:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+    end;
+  end;
+end;
+
+procedure TCL005Coll.IndexValueListNodes(propIndex: TCL005Item.TPropertyIndex);
+begin
+
+end;
+
+function TCL005Coll.IsCollVisible(PropIndex: Word): Boolean;
+begin
+  Result  := TCL005Item.TPropertyIndex(PropIndex) in  VisibleColl;
+end;
+
+
+procedure TCL005Coll.OnGetTextDynFMX(sender: TObject; field: Word; index: Integer; datapos: Cardinal; var value: string);
+var
+  Tempitem: TCL005Item;
+begin
+  if index < 0 then
+  begin
+    Tempitem := TCL005Item.Create(nil);
+    Tempitem.DataPos := datapos;
+    GetCellFromMap(field, -1, Tempitem, value);
+    Tempitem.Free;
+  end
+  else
+  begin
+    Tempitem := Self.Items[index];
+    if Assigned(Tempitem.PRecord) then
+    begin
+      GetCellFromRecord(field, Tempitem, value);
+    end
+    else
+    begin
+      GetCellFromMap(field, index, Tempitem, value);
+    end;
+  end;
+end;
+
+{=== TEXT SEARCH HANDLER ===}
+procedure TCL005Coll.OnSetTextSearchEDT(Text: string; field: Word; Condition: TConditionSet);
+var
+  AText: string;
+begin
+  if Text = '' then
+  begin
+    Exclude(ListForFinder[0].PRecord.setProp, TCL005Item.TPropertyIndex(Field));
+  end
+  else
+  begin
+    if not (cotSens in Condition) then
+      AText := AnsiUpperCase(Text)
+    else
+      AText := Text;
+
+    Include(ListForFinder[0].PRecord.setProp, TCL005Item.TPropertyIndex(Field));
+  end;
+
+  Self.PRecordSearch.setProp := ListForFinder[0].PRecord.setProp;
+
+  case TCL005Item.TPropertyIndex(Field) of
+CL005_ADDRESS_ACT: ListForFinder[0].PRecord.ADDRESS_ACT := AText;
+    CL005_ADDRESS_DOGNZOK: ListForFinder[0].PRecord.ADDRESS_DOGNZOK := AText;
+    CL005_ADRES: ListForFinder[0].PRecord.ADRES := AText;
+    CL005_BANKA: ListForFinder[0].PRecord.BANKA := AText;
+    CL005_BANKOW_KOD: ListForFinder[0].PRecord.BANKOW_KOD := AText;
+    CL005_BULSTAT: ListForFinder[0].PRecord.BULSTAT := AText;
+    CL005_COMPANYNAME: ListForFinder[0].PRecord.COMPANYNAME := AText;
+    CL005_CONTRACT_RZOK: ListForFinder[0].PRecord.CONTRACT_RZOK := AText;
+    CL005_DAN_NOMER: ListForFinder[0].PRecord.DAN_NOMER := AText;
+    CL005_EGN: ListForFinder[0].PRecord.EGN := AText;
+    CL005_FNAME: ListForFinder[0].PRecord.FNAME := AText;
+    CL005_FULLNAME: ListForFinder[0].PRecord.FULLNAME := AText;
+    CL005_KOD_RAJON: ListForFinder[0].PRecord.KOD_RAJON := AText;
+    CL005_KOD_RZOK: ListForFinder[0].PRecord.KOD_RZOK := AText;
+    CL005_LNAME: ListForFinder[0].PRecord.LNAME := AText;
+    CL005_LNCH: ListForFinder[0].PRecord.LNCH := AText;
+    CL005_NAME: ListForFinder[0].PRecord.NAME := AText;
+    CL005_NAS_MQSTO: ListForFinder[0].PRecord.NAS_MQSTO := AText;
+    CL005_NOMER_LZ: ListForFinder[0].PRecord.NOMER_LZ := AText;
+    CL005_NOM_NAP: ListForFinder[0].PRecord.NOM_NAP := AText;
+    CL005_NZOK_NOMER: ListForFinder[0].PRecord.NZOK_NOMER := AText;
+    CL005_OBLAST: ListForFinder[0].PRecord.OBLAST := AText;
+    CL005_OBSHTINA: ListForFinder[0].PRecord.OBSHTINA := AText;
+    CL005_SMETKA: ListForFinder[0].PRecord.SMETKA := AText;
+    CL005_SNAME: ListForFinder[0].PRecord.SNAME := AText;
+    CL005_UPRAVITEL: ListForFinder[0].PRecord.UPRAVITEL := AText;
+    CL005_VIDFIRMA: ListForFinder[0].PRecord.VIDFIRMA := AText;
+    CL005_VID_IDENT: ListForFinder[0].PRecord.VID_IDENT := AText;
+    CL005_VID_PRAKTIKA: ListForFinder[0].PRecord.VID_PRAKTIKA := AText;
+  end;
+end;
+
+
+{=== DATE SEARCH HANDLER ===}
+procedure TCL005Coll.OnSetDateSearchEDT(Value: TDate; field: Word; Condition: TConditionSet);
+begin
+  Include(ListForFinder[0].PRecord.setProp, TCL005Item.TPropertyIndex(Field));
+  Self.PRecordSearch.setProp := ListForFinder[0].PRecord.setProp;
+
+  case TCL005Item.TPropertyIndex(Field) of
+CL005_CONTRACT_DATE: ListForFinder[0].PRecord.CONTRACT_DATE := Value;
+  end;
+end;
+
+
+{=== NUMERIC SEARCH HANDLER ===}
+procedure TCL005Coll.OnSetNumSearchEDT(Value: Integer; field: Word; Condition: TConditionSet);
+begin
+  Include(ListForFinder[0].PRecord.setProp, TCL005Item.TPropertyIndex(Field));
+  Self.PRecordSearch.setProp := ListForFinder[0].PRecord.setProp;
+
+  case TCL005Item.TPropertyIndex(Field) of
+CL005_CONTRACT_TYPE: ListForFinder[0].PRecord.CONTRACT_TYPE := Value;
+    CL005_NEBL_USL: ListForFinder[0].PRecord.NEBL_USL := Value;
+  end;
+end;
+
+
+{=== LOGICAL (CHECKBOX) SEARCH HANDLER ===}
+procedure TCL005Coll.OnSetLogicalSearchEDT(Value: Boolean; field, logIndex: Word);
+begin
+  case TCL005Item.TPropertyIndex(Field) of
+    CL005_Logical:
+    begin
+      if value then
+        Include(ListForFinder[0].PRecord.Logical, TlogicalCL005(logIndex))
+      else
+        Exclude(ListForFinder[0].PRecord.Logical, TlogicalCL005(logIndex))   
+    end;
+  end;
+end;
+
+
+procedure TCL005Coll.OnSetTextSearchLog(Log: TlogicalCL005Set);
+begin
+  ListForFinder[0].PRecord.Logical := Log;
+end;
+
+procedure TCL005Coll.OrderFieldsSearch1(Grid: TTeeGrid);
+var
+  FieldCollOptionNode, run: PVirtualNode;
+  Comparison: TComparison<PVirtualNode>;
+  i, index, rank: Integer;
+  ArrCol: TArray<TColumn>;
+begin
+  inherited;
+  if linkOptions = nil then  Exit;
+
+  FieldCollOptionNode := FindSearchFieldCollOptionNode;
+  ApplyVisibilityFromTree(FieldCollOptionNode);
+  run := FieldCollOptionNode.FirstChild;
+
+  while run <> nil do
+  begin
+    Grid.Columns[run.index + 1].Header.Text := DisplayName(run.Dummy - 1);
+    ArrayPropOrderSearchOptions[run.index + 1] :=  run.Dummy - 1;
+    run := run.NextSibling;
+  end;
+
+end;
+
+function TCL005Coll.PropType(propIndex: Word): TAspectTypeKind;
+begin
+  inherited;
+  case TCL005Item.TPropertyIndex(propIndex) of
+    CL005_ADDRESS_ACT: Result := actAnsiString;
+    CL005_ADDRESS_DOGNZOK: Result := actAnsiString;
+    CL005_ADRES: Result := actAnsiString;
+    CL005_BANKA: Result := actAnsiString;
+    CL005_BANKOW_KOD: Result := actAnsiString;
+    CL005_BULSTAT: Result := actAnsiString;
+    CL005_COMPANYNAME: Result := actAnsiString;
+    CL005_CONTRACT_DATE: Result := actTDate;
+    CL005_CONTRACT_RZOK: Result := actAnsiString;
+    CL005_CONTRACT_TYPE: Result := actword;
+    CL005_DAN_NOMER: Result := actAnsiString;
+    CL005_EGN: Result := actAnsiString;
+    CL005_FNAME: Result := actAnsiString;
+    CL005_FULLNAME: Result := actAnsiString;
+    CL005_INVOICECOMPANY: Result := actboolean;
+    CL005_ISSUER_TYPE: Result := actboolean;
+    CL005_IS_SAMOOSIG: Result := actboolean;
+    CL005_KOD_RAJON: Result := actAnsiString;
+    CL005_KOD_RZOK: Result := actAnsiString;
+    CL005_LNAME: Result := actAnsiString;
+    CL005_LNCH: Result := actAnsiString;
+    CL005_NAME: Result := actAnsiString;
+    CL005_NAS_MQSTO: Result := actAnsiString;
+    CL005_NEBL_USL: Result := actdouble;
+    CL005_NOMER_LZ: Result := actAnsiString;
+    CL005_NOM_NAP: Result := actAnsiString;
+    CL005_NZOK_NOMER: Result := actAnsiString;
+    CL005_OBLAST: Result := actAnsiString;
+    CL005_OBSHTINA: Result := actAnsiString;
+    CL005_SELF_INSURED_DECLARATION: Result := actboolean;
+    CL005_SMETKA: Result := actAnsiString;
+    CL005_SNAME: Result := actAnsiString;
+    CL005_UPRAVITEL: Result := actAnsiString;
+    CL005_VIDFIRMA: Result := actAnsiString;
+    CL005_VID_IDENT: Result := actAnsiString;
+    CL005_VID_PRAKTIKA: Result := actAnsiString;
+  else
+    Result := actNone;
+  end
+end;
+
+function TCL005Coll.RankSortOption(propIndex: Word): cardinal;
+begin
+  //
+end;
+
+procedure TCL005Coll.SetCell(Sender: TObject; const AColumn: TColumn; const ARow: Integer; var AValue: String);
+var
+  isOld: Boolean;
+  CL005: TCL005Item;
+  ACol: Integer;
+begin
+  if Count = 0 then Exit;
+  ACol := TVirtualModeData(Sender).IndexOf(AColumn);
+  isOld := False;
+  CL005 := Items[ARow];
+  if not Assigned(CL005.PRecord) then
+  begin
+    New(CL005.PRecord);
+    CL005.PRecord.setProp := [];
+	CntUpdates := CntUpdates + 1;
+  end
+  else
+  begin
+    case TCL005Item.TPropertyIndex(ACol) of
+      CL005_ADDRESS_ACT: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_ADDRESS_DOGNZOK: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_ADRES: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_BANKA: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_BANKOW_KOD: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_BULSTAT: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_COMPANYNAME: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_CONTRACT_DATE: isOld :=  CL005.getDateMap(Self.Buf, Self.posData, ACol) = StrToDate(AValue);
+    CL005_CONTRACT_RZOK: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_CONTRACT_TYPE: isOld :=  CL005.getWordMap(Self.Buf, Self.posData, ACol) = StrToInt(AValue);
+    CL005_DAN_NOMER: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_EGN: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_FNAME: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_FULLNAME: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_INVOICECOMPANY: isOld :=  CL005.getBooleanMap(Self.Buf, Self.posData, ACol) = StrToBool(AValue);
+    CL005_ISSUER_TYPE: isOld :=  CL005.getBooleanMap(Self.Buf, Self.posData, ACol) = StrToBool(AValue);
+    CL005_IS_SAMOOSIG: isOld :=  CL005.getBooleanMap(Self.Buf, Self.posData, ACol) = StrToBool(AValue);
+    CL005_KOD_RAJON: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_KOD_RZOK: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_LNAME: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_LNCH: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_NAME: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_NAS_MQSTO: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_NOMER_LZ: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_NOM_NAP: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_NZOK_NOMER: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_OBLAST: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_OBSHTINA: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_SELF_INSURED_DECLARATION: isOld :=  CL005.getBooleanMap(Self.Buf, Self.posData, ACol) = StrToBool(AValue);
+    CL005_SMETKA: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_SNAME: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_UPRAVITEL: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_VIDFIRMA: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_VID_IDENT: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL005_VID_PRAKTIKA: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    end;
+  end;
+  if isOld then
+  begin
+    Exclude(CL005.PRecord.setProp, TCL005Item.TPropertyIndex(ACol));
+    if CL005.PRecord.setProp = [] then
+    begin
+      Dispose(CL005.PRecord);
+      CL005.PRecord := nil;
+      CntUpdates := CntUpdates - 1;
+      Exit;
+    end;
+  end;
+  Include(CL005.PRecord.setProp, TCL005Item.TPropertyIndex(ACol));
+  case TCL005Item.TPropertyIndex(ACol) of
+    CL005_ADDRESS_ACT: CL005.PRecord.ADDRESS_ACT := AValue;
+    CL005_ADDRESS_DOGNZOK: CL005.PRecord.ADDRESS_DOGNZOK := AValue;
+    CL005_ADRES: CL005.PRecord.ADRES := AValue;
+    CL005_BANKA: CL005.PRecord.BANKA := AValue;
+    CL005_BANKOW_KOD: CL005.PRecord.BANKOW_KOD := AValue;
+    CL005_BULSTAT: CL005.PRecord.BULSTAT := AValue;
+    CL005_COMPANYNAME: CL005.PRecord.COMPANYNAME := AValue;
+    CL005_CONTRACT_DATE: CL005.PRecord.CONTRACT_DATE := StrToDate(AValue);
+    CL005_CONTRACT_RZOK: CL005.PRecord.CONTRACT_RZOK := AValue;
+    CL005_CONTRACT_TYPE: CL005.PRecord.CONTRACT_TYPE := StrToInt(AValue);
+    CL005_DAN_NOMER: CL005.PRecord.DAN_NOMER := AValue;
+    CL005_EGN: CL005.PRecord.EGN := AValue;
+    CL005_FNAME: CL005.PRecord.FNAME := AValue;
+    CL005_FULLNAME: CL005.PRecord.FULLNAME := AValue;
+    CL005_INVOICECOMPANY: CL005.PRecord.INVOICECOMPANY := StrToBool(AValue);
+    CL005_ISSUER_TYPE: CL005.PRecord.ISSUER_TYPE := StrToBool(AValue);
+    CL005_IS_SAMOOSIG: CL005.PRecord.IS_SAMOOSIG := StrToBool(AValue);
+    CL005_KOD_RAJON: CL005.PRecord.KOD_RAJON := AValue;
+    CL005_KOD_RZOK: CL005.PRecord.KOD_RZOK := AValue;
+    CL005_LNAME: CL005.PRecord.LNAME := AValue;
+    CL005_LNCH: CL005.PRecord.LNCH := AValue;
+    CL005_NAME: CL005.PRecord.NAME := AValue;
+    CL005_NAS_MQSTO: CL005.PRecord.NAS_MQSTO := AValue;
+    CL005_NEBL_USL: CL005.PRecord.NEBL_USL := StrToFloat(AValue);
+    CL005_NOMER_LZ: CL005.PRecord.NOMER_LZ := AValue;
+    CL005_NOM_NAP: CL005.PRecord.NOM_NAP := AValue;
+    CL005_NZOK_NOMER: CL005.PRecord.NZOK_NOMER := AValue;
+    CL005_OBLAST: CL005.PRecord.OBLAST := AValue;
+    CL005_OBSHTINA: CL005.PRecord.OBSHTINA := AValue;
+    CL005_SELF_INSURED_DECLARATION: CL005.PRecord.SELF_INSURED_DECLARATION := StrToBool(AValue);
+    CL005_SMETKA: CL005.PRecord.SMETKA := AValue;
+    CL005_SNAME: CL005.PRecord.SNAME := AValue;
+    CL005_UPRAVITEL: CL005.PRecord.UPRAVITEL := AValue;
+    CL005_VIDFIRMA: CL005.PRecord.VIDFIRMA := AValue;
+    CL005_VID_IDENT: CL005.PRecord.VID_IDENT := AValue;
+    CL005_VID_PRAKTIKA: CL005.PRecord.VID_PRAKTIKA := AValue;
+  end;
+end;
+
+procedure TCL005Coll.SetFieldText(Sender: TObject; const ACol, ARow: Integer; var AFieldText: String);
+var
+  isOld: Boolean;
+  CL005: TCL005Item;
+begin
+  if Count = 0 then Exit;
+  isOld := False; 
+  CL005 := Items[ARow];
+  if not Assigned(CL005.PRecord) then
+  begin
+    New(CL005.PRecord);
+    CL005.PRecord.setProp := [];
+	  CntUpdates := CntUpdates + 1;
+  end
+  else
+  begin
+    case TCL005Item.TPropertyIndex(ACol) of
+      CL005_ADDRESS_ACT: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_ADDRESS_DOGNZOK: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_ADRES: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_BANKA: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_BANKOW_KOD: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_BULSTAT: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_COMPANYNAME: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_CONTRACT_DATE: isOld :=  CL005.getDateMap(Self.Buf, Self.posData, ACol) = StrToDate(AFieldText);
+    CL005_CONTRACT_RZOK: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_CONTRACT_TYPE: isOld :=  CL005.getWordMap(Self.Buf, Self.posData, ACol) = StrToInt(AFieldText);
+    CL005_DAN_NOMER: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_EGN: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_FNAME: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_FULLNAME: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_INVOICECOMPANY: isOld :=  CL005.getBooleanMap(Self.Buf, Self.posData, ACol) = StrToBool(AFieldText);
+    CL005_ISSUER_TYPE: isOld :=  CL005.getBooleanMap(Self.Buf, Self.posData, ACol) = StrToBool(AFieldText);
+    CL005_IS_SAMOOSIG: isOld :=  CL005.getBooleanMap(Self.Buf, Self.posData, ACol) = StrToBool(AFieldText);
+    CL005_KOD_RAJON: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_KOD_RZOK: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_LNAME: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_LNCH: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_NAME: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_NAS_MQSTO: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_NOMER_LZ: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_NOM_NAP: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_NZOK_NOMER: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_OBLAST: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_OBSHTINA: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_SELF_INSURED_DECLARATION: isOld :=  CL005.getBooleanMap(Self.Buf, Self.posData, ACol) = StrToBool(AFieldText);
+    CL005_SMETKA: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_SNAME: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_UPRAVITEL: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_VIDFIRMA: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_VID_IDENT: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL005_VID_PRAKTIKA: isOld :=  CL005.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    end;
+  end;
+  if isOld then
+  begin
+    Exclude(CL005.PRecord.setProp, TCL005Item.TPropertyIndex(ACol));
+    if CL005.PRecord.setProp = [] then
+    begin
+      Dispose(CL005.PRecord);
+      CL005.PRecord := nil;
+      CntUpdates := CntUpdates - 1;
+      Exit;
+    end;
+  end;
+  Include(CL005.PRecord.setProp, TCL005Item.TPropertyIndex(ACol));
+  case TCL005Item.TPropertyIndex(ACol) of
+    CL005_ADDRESS_ACT: CL005.PRecord.ADDRESS_ACT := AFieldText;
+    CL005_ADDRESS_DOGNZOK: CL005.PRecord.ADDRESS_DOGNZOK := AFieldText;
+    CL005_ADRES: CL005.PRecord.ADRES := AFieldText;
+    CL005_BANKA: CL005.PRecord.BANKA := AFieldText;
+    CL005_BANKOW_KOD: CL005.PRecord.BANKOW_KOD := AFieldText;
+    CL005_BULSTAT: CL005.PRecord.BULSTAT := AFieldText;
+    CL005_COMPANYNAME: CL005.PRecord.COMPANYNAME := AFieldText;
+    CL005_CONTRACT_DATE: CL005.PRecord.CONTRACT_DATE := StrToDate(AFieldText);
+    CL005_CONTRACT_RZOK: CL005.PRecord.CONTRACT_RZOK := AFieldText;
+    CL005_CONTRACT_TYPE: CL005.PRecord.CONTRACT_TYPE := StrToInt(AFieldText);
+    CL005_DAN_NOMER: CL005.PRecord.DAN_NOMER := AFieldText;
+    CL005_EGN: CL005.PRecord.EGN := AFieldText;
+    CL005_FNAME: CL005.PRecord.FNAME := AFieldText;
+    CL005_FULLNAME: CL005.PRecord.FULLNAME := AFieldText;
+    CL005_INVOICECOMPANY: CL005.PRecord.INVOICECOMPANY := StrToBool(AFieldText);
+    CL005_ISSUER_TYPE: CL005.PRecord.ISSUER_TYPE := StrToBool(AFieldText);
+    CL005_IS_SAMOOSIG: CL005.PRecord.IS_SAMOOSIG := StrToBool(AFieldText);
+    CL005_KOD_RAJON: CL005.PRecord.KOD_RAJON := AFieldText;
+    CL005_KOD_RZOK: CL005.PRecord.KOD_RZOK := AFieldText;
+    CL005_LNAME: CL005.PRecord.LNAME := AFieldText;
+    CL005_LNCH: CL005.PRecord.LNCH := AFieldText;
+    CL005_NAME: CL005.PRecord.NAME := AFieldText;
+    CL005_NAS_MQSTO: CL005.PRecord.NAS_MQSTO := AFieldText;
+    CL005_NEBL_USL: CL005.PRecord.NEBL_USL := StrToFloat(AFieldText);
+    CL005_NOMER_LZ: CL005.PRecord.NOMER_LZ := AFieldText;
+    CL005_NOM_NAP: CL005.PRecord.NOM_NAP := AFieldText;
+    CL005_NZOK_NOMER: CL005.PRecord.NZOK_NOMER := AFieldText;
+    CL005_OBLAST: CL005.PRecord.OBLAST := AFieldText;
+    CL005_OBSHTINA: CL005.PRecord.OBSHTINA := AFieldText;
+    CL005_SELF_INSURED_DECLARATION: CL005.PRecord.SELF_INSURED_DECLARATION := StrToBool(AFieldText);
+    CL005_SMETKA: CL005.PRecord.SMETKA := AFieldText;
+    CL005_SNAME: CL005.PRecord.SNAME := AFieldText;
+    CL005_UPRAVITEL: CL005.PRecord.UPRAVITEL := AFieldText;
+    CL005_VIDFIRMA: CL005.PRecord.VIDFIRMA := AFieldText;
+    CL005_VID_IDENT: CL005.PRecord.VID_IDENT := AFieldText;
+    CL005_VID_PRAKTIKA: CL005.PRecord.VID_PRAKTIKA := AFieldText;
+  end;
+end;
+
+procedure TCL005Coll.SetItem(Index: Integer; const Value: TCL005Item);
+begin
+  inherited SetItem(Index, Value);
+end;
+
+procedure TCL005Coll.SetSearchingValue(const Value: string);
+var
+  i: Integer;
+begin
+  FSearchingValue := Value;
+  ListCL005Search.Clear;
+  for i := 0 to self.Count - 1 do
+  begin
+    case  TCL005Item.TPropertyIndex(self.FindedRes.PropIndex) of
+	  CL005_ADDRESS_ACT:
+begin
+  if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+  begin
+    ListCL005Search.Add(self.Items[i]);
+  end;
+end;
+      CL005_ADDRESS_DOGNZOK:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_ADRES:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_BANKA:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_BANKOW_KOD:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_BULSTAT:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_COMPANYNAME:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_CONTRACT_RZOK:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_CONTRACT_TYPE: 
+      begin
+        if IntToStr(self.Items[i].IndexWord) = FSearchingValue then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_DAN_NOMER:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_EGN:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_FNAME:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_FULLNAME:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_KOD_RAJON:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_KOD_RZOK:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_LNAME:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_LNCH:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_NAME:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_NAS_MQSTO:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_NOMER_LZ:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_NOM_NAP:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_NZOK_NOMER:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_OBLAST:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_OBSHTINA:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_SMETKA:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_SNAME:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_UPRAVITEL:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_VIDFIRMA:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_VID_IDENT:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+      CL005_VID_PRAKTIKA:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL005Search.Add(self.Items[i]);
+        end;
+      end;
+    end;
+  end;
+end;
+
+procedure TCL005Coll.ShowGrid(Grid: TTeeGrid);
+var
+  i: word;
+
+begin
+  Grid.Data:=TVirtualModeData.Create(self.FieldCount + 1, self.Count);
+  for i := 0 to self.FieldCount - 1 do
+  begin
+    TVirtualModeData(Grid.Data).Headers[i] := self.DisplayName(i);
+  end;
+  TVirtualModeData(Grid.Data).Headers[self.FieldCount] := 'Ред';
+
+  TVirtualModeData(Grid.Data).OnGetValue:=self.GetCell;
+  TVirtualModeData(Grid.Data).OnSetValue:=self.SetCell;
+
+  for i := 0 to self.FieldCount - 1 do
+  begin
+    Grid.Columns[i].Width.Value := 100;
+  end;
+
+  Grid.Columns[self.FieldCount].Width.Value := 50;
+  Grid.Columns[self.FieldCount].Index := 0;
+  TTeeGRD(Grid).Width  := TTeeGRD(Grid).Width + 1;
+  TTeeGRD(Grid).Width  := TTeeGRD(Grid).Width - 1;
+
+end;
+
+procedure TCL005Coll.ShowGridFromList(Grid: TTeeGrid; LST: TList<TCL005Item>);
+var
+  i: word;
+
+begin
+  ListForFinder := LST;
+  Grid.Data:=TVirtualModeData.Create(self.FieldCount + 1, LST.Count);
+  for i := 0 to self.FieldCount - 1 do
+  begin
+    TVirtualModeData(Grid.Data).Headers[i] := self.DisplayName(i);
+  end;
+  TVirtualModeData(Grid.Data).Headers[self.FieldCount] := 'Ред';
+
+  TVirtualModeData(Grid.Data).OnGetValue:=self.GetCellList;
+  TVirtualModeData(Grid.Data).OnSetValue:=nil;
+
+  for i := 0 to self.FieldCount - 1 do
+  begin
+    Grid.Columns[i].Width.Value := 100;
+  end;
+
+  Grid.Columns[self.FieldCount].Width.Value := 50;
+  Grid.Columns[self.FieldCount].Index := 0;
+  TTeeGRD(Grid).Width  := TTeeGRD(Grid).Width + 1;
+  TTeeGRD(Grid).Width  := TTeeGRD(Grid).Width - 1;
+
+end;
+
+procedure TCL005Coll.ShowSearchedGrid(Grid: TTeeGrid);
+var
+  i: word;
+
+begin
+  Grid.Data:=TVirtualModeData.Create(self.FieldCount + 1, self.ListCL005Search.Count);
+  for i := 0 to self.FieldCount - 1 do
+  begin
+    TVirtualModeData(Grid.Data).Headers[i] := self.DisplayName(i);
+  end;
+  TVirtualModeData(Grid.Data).Headers[self.FieldCount] := Format('Ред/%d бр.', [self.ListCL005Search.Count]);
+
+  TVirtualModeData(Grid.Data).OnGetValue:=self.GetCellSearch;
+  TVirtualModeData(Grid.Data).OnSetValue:=nil;
+
+  for i := 0 to self.FieldCount - 1 do
+  begin
+    Grid.Columns[i].Width.Value := 110;
+  end;
+
+  Grid.Columns[self.FieldCount].Width.Value := 90;
+  Grid.Columns[self.FieldCount].Index := 0;
+  grid.Margins.Left := 100;
+  grid.Margins.Left := 0;
+  grid.Scrolling.Active := true;
+end;
+
+procedure TCL005Coll.SortByIndexAnsiString;
+var
+  sc : TList<TCollectionItem>;
+
+  procedure QuickSort(L, R: Integer);
+  var
+    I, J, P : Integer;
+    Save : TCollectionItem;
+  begin
+    repeat
+      I := L;
+      J := R;
+      P := (L + R) shr 1;
+      repeat
+        while (Items[I].IndexAnsiStr1) < (Items[P].IndexAnsiStr1) do Inc(I);
+        while (Items[J].IndexAnsiStr1) > (Items[P].IndexAnsiStr1) do Dec(J);
+        if I <= J then begin
+          Save := sc.Items[I];
+          sc.Items[I] := sc.Items[J];
+          sc.Items[J] := Save;
+          if P = I then
+            P := J
+          else if P = J then
+            P := I;
+          Inc(I);
+          Dec(J);
+        end;
+      until I > J;
+      if L < J then QuickSort(L, J);
+      L := I;
+    until I >= R;
+  end;
+begin
+  if (count >1 ) then
+  begin
+    sc := TCollectionForSort(Self).FItems;
+    QuickSort(0,count-1);
+  end;
+end;
+
+procedure TCL005Coll.SortByIndexInt;
+var
+  sc : TList<TCollectionItem>;
+
+  procedure QuickSort(L, R: Integer);
+  var
+    I, J, P : Integer;
+    Save : TCollectionItem;
+  begin
+    repeat
+      I := L;
+      J := R;
+      P := (L + R) shr 1;
+      repeat
+        while (Items[I]).IndexInt < (Items[P]).IndexInt do Inc(I);
+        while (Items[J]).IndexInt > (Items[P]).IndexInt do Dec(J);
+        if I <= J then begin
+          Save := sc.Items[I];
+          sc.Items[I] := sc.Items[J];
+          sc.Items[J] := Save;
+          if P = I then
+            P := J
+          else if P = J then
+            P := I;
+          Inc(I);
+          Dec(J);
+        end;
+      until I > J;
+      if L < J then QuickSort(L, J);
+      L := I;
+    until I >= R;
+  end;
+begin
+  if (count >1 ) then
+  begin
+    sc := TCollectionForSort(Self).FItems;
+    QuickSort(0,count-1);
+  end;
+end;
+
+procedure TCL005Coll.SortByIndexWord;
+var
+  sc : TList<TCollectionItem>;
+
+  procedure QuickSort(L, R: Integer);
+  var
+    I, J, P : Integer;
+    Save : TCollectionItem;
+  begin
+    repeat
+      I := L;
+      J := R;
+      P := (L + R) shr 1;
+      repeat
+        while (Items[I]).IndexWord < (Items[P]).IndexWord do Inc(I);
+        while (Items[J]).IndexWord > (Items[P]).IndexWord do Dec(J);
+        if I <= J then begin
+          Save := sc.Items[I];
+          sc.Items[I] := sc.Items[J];
+          sc.Items[J] := Save;
+          if P = I then
+            P := J
+          else if P = J then
+            P := I;
+          Inc(I);
+          Dec(J);
+        end;
+      until I > J;
+      if L < J then QuickSort(L, J);
+      L := I;
+    until I >= R;
+  end;
+begin
+  if (count >1 ) then
+  begin
+    sc := TCollectionForSort(Self).FItems;
+    QuickSort(0,count-1);
+  end;
+end;
+
+procedure TCL005Coll.SortByIndexValue(propIndex: TCL005Item.TPropertyIndex);
+begin
+  case propIndex of
+    CL005_ADDRESS_ACT: SortByIndexAnsiString;
+      CL005_ADDRESS_DOGNZOK: SortByIndexAnsiString;
+      CL005_ADRES: SortByIndexAnsiString;
+      CL005_BANKA: SortByIndexAnsiString;
+      CL005_BANKOW_KOD: SortByIndexAnsiString;
+      CL005_BULSTAT: SortByIndexAnsiString;
+      CL005_COMPANYNAME: SortByIndexAnsiString;
+      CL005_CONTRACT_RZOK: SortByIndexAnsiString;
+      CL005_CONTRACT_TYPE: SortByIndexWord;
+      CL005_DAN_NOMER: SortByIndexAnsiString;
+      CL005_EGN: SortByIndexAnsiString;
+      CL005_FNAME: SortByIndexAnsiString;
+      CL005_FULLNAME: SortByIndexAnsiString;
+      CL005_KOD_RAJON: SortByIndexAnsiString;
+      CL005_KOD_RZOK: SortByIndexAnsiString;
+      CL005_LNAME: SortByIndexAnsiString;
+      CL005_LNCH: SortByIndexAnsiString;
+      CL005_NAME: SortByIndexAnsiString;
+      CL005_NAS_MQSTO: SortByIndexAnsiString;
+      CL005_NOMER_LZ: SortByIndexAnsiString;
+      CL005_NOM_NAP: SortByIndexAnsiString;
+      CL005_NZOK_NOMER: SortByIndexAnsiString;
+      CL005_OBLAST: SortByIndexAnsiString;
+      CL005_OBSHTINA: SortByIndexAnsiString;
+      CL005_SMETKA: SortByIndexAnsiString;
+      CL005_SNAME: SortByIndexAnsiString;
+      CL005_UPRAVITEL: SortByIndexAnsiString;
+      CL005_VIDFIRMA: SortByIndexAnsiString;
+      CL005_VID_IDENT: SortByIndexAnsiString;
+      CL005_VID_PRAKTIKA: SortByIndexAnsiString;
+  end;
+end;
+
+procedure TCL005Coll.ImportXMLNzis(cl000: TObject);
+var
+  Acl000: TCL000EntryCollection;
+  i, j: integer;
+  TempItem: TCL005Item;
+  entry: TCL000EntryItem;
+  idx: array of integer;
+  propIdx: TCL005Item.TPropertyIndex;
+  xmlName: string;
+begin
+  Acl000 := TCL000EntryCollection(cl000);
+
+  // --- Build index mapping between XML meta fields and DDL properties ---
+  SetLength(idx, 0);
+  j := 0;
+
+  for propIdx := Low(TCL005Item.TPropertyIndex) to High(TCL005Item.TPropertyIndex) do
+  begin
+    propName := TRttiEnumerationType.GetName(propIdx);
+
+    // Skip technical
+    if SameText(propName, 'CL005_Key') then Continue;
+    if SameText(propName, 'CL005_Description') then Continue;
+    if SameText(propName, 'CL005_Logical') then Continue;
+
+    // Remove prefix e.g. "CL000_"
+    xmlName := propName.Substring(6);
+
+    // Convert property name to XML name (replace "_" with " ")
+    xmlName := xmlName.Replace('_', ' ');
+
+    // Find matching meta-field index
+    for i := 0 to Acl000.FieldsNames.Count - 1 do
+    begin
+      if SameText(Acl000.FieldsNames[i], xmlName) or SameText(Acl000.FieldsNames[i], propName.Substring(6)) then
+      begin
+        SetLength(idx, Length(idx)+1);
+        idx[High(idx)] := i;
+        Break;
+      end;
+    end;
+  end;
+
+  // --- Insert rows from XML into the generated collection ---
+  for i := 0 to Acl000.Count - 1 do
+  begin
+    entry := Acl000.Items[i];
+    TempItem := TCL005Item(Self.Add);
+    New(TempItem.PRecord);
+    TempItem.PRecord.setProp := [];
+
+    // Key
+    TempItem.PRecord.Key := entry.Key;
+    Include(TempItem.PRecord.setProp, CL005_Key);
+
+    // Description
+    TempItem.PRecord.Description := entry.Descr;
+    Include(TempItem.PRecord.setProp, CL005_Description);
+
+    j := 0;
+
+    // ADRES
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.ADRES := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_ADRES);
+    end;
+    Inc(j);
+
+    // BANKA
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.BANKA := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_BANKA);
+    end;
+    Inc(j);
+
+    // BANKOW_KOD
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.BANKOW_KOD := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_BANKOW_KOD);
+    end;
+    Inc(j);
+
+    // BULSTAT
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.BULSTAT := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_BULSTAT);
+    end;
+    Inc(j);
+
+    // COMPANYNAME
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.COMPANYNAME := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_COMPANYNAME);
+    end;
+    Inc(j);
+
+    // CONTRACT_DATE
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.CONTRACT_DATE := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_CONTRACT_DATE);
+    end;
+    Inc(j);
+
+    // CONTRACT_RZOK
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.CONTRACT_RZOK := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_CONTRACT_RZOK);
+    end;
+    Inc(j);
+
+    // CONTRACT_TYPE
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.CONTRACT_TYPE := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_CONTRACT_TYPE);
+    end;
+    Inc(j);
+
+    // DAN_NOMER
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.DAN_NOMER := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_DAN_NOMER);
+    end;
+    Inc(j);
+
+    // EGN
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.EGN := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_EGN);
+    end;
+    Inc(j);
+
+    // FNAME
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.FNAME := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_FNAME);
+    end;
+    Inc(j);
+
+    // FULLNAME
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.FULLNAME := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_FULLNAME);
+    end;
+    Inc(j);
+
+    // INVOICECOMPANY
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.INVOICECOMPANY := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_INVOICECOMPANY);
+    end;
+    Inc(j);
+
+    // ISSUER_TYPE
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.ISSUER_TYPE := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_ISSUER_TYPE);
+    end;
+    Inc(j);
+
+    // IS_SAMOOSIG
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.IS_SAMOOSIG := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_IS_SAMOOSIG);
+    end;
+    Inc(j);
+
+    // KOD_RAJON
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.KOD_RAJON := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_KOD_RAJON);
+    end;
+    Inc(j);
+
+    // KOD_RZOK
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.KOD_RZOK := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_KOD_RZOK);
+    end;
+    Inc(j);
+
+    // LNAME
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.LNAME := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_LNAME);
+    end;
+    Inc(j);
+
+    // LNCH
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.LNCH := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_LNCH);
+    end;
+    Inc(j);
+
+    // NAME
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.NAME := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_NAME);
+    end;
+    Inc(j);
+
+    // NAS_MQSTO
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.NAS_MQSTO := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_NAS_MQSTO);
+    end;
+    Inc(j);
+
+    // NEBL_USL
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.NEBL_USL := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_NEBL_USL);
+    end;
+    Inc(j);
+
+    // NOMER_LZ
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.NOMER_LZ := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_NOMER_LZ);
+    end;
+    Inc(j);
+
+    // NOM_NAP
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.NOM_NAP := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_NOM_NAP);
+    end;
+    Inc(j);
+
+    // NZOK_NOMER
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.NZOK_NOMER := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_NZOK_NOMER);
+    end;
+    Inc(j);
+
+    // OBLAST
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.OBLAST := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_OBLAST);
+    end;
+    Inc(j);
+
+    // OBSHTINA
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.OBSHTINA := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_OBSHTINA);
+    end;
+    Inc(j);
+
+    // SELF_INSURED_DECLARATION
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.SELF_INSURED_DECLARATION := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_SELF_INSURED_DECLARATION);
+    end;
+    Inc(j);
+
+    // SMETKA
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.SMETKA := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_SMETKA);
+    end;
+    Inc(j);
+
+    // SNAME
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.SNAME := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_SNAME);
+    end;
+    Inc(j);
+
+    // UPRAVITEL
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.UPRAVITEL := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_UPRAVITEL);
+    end;
+    Inc(j);
+
+    // VIDFIRMA
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.VIDFIRMA := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_VIDFIRMA);
+    end;
+    Inc(j);
+
+    // VID_IDENT
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.VID_IDENT := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_VID_IDENT);
+    end;
+    Inc(j);
+
+    // VID_PRAKTIKA
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.VID_PRAKTIKA := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL005_VID_PRAKTIKA);
+    end;
+    Inc(j);
+
+    TempItem.InsertCL005;
+    Self.streamComm.Len := Self.streamComm.Size;
+    Self.cmdFile.CopyFrom(Self.streamComm, 0);
+    Dispose(TempItem.PRecord);
+    TempItem.PRecord := nil;
+  end;
+end;
+
+
+end.

@@ -1,0 +1,1649 @@
+unit Table.CL011;
+
+interface
+uses
+  Aspects.Collections, Aspects.Types, Aspects.Functions, Vcl.Dialogs,
+  VCLTee.Grid, Tee.Grid.Columns, Tee.GridData.Strings,
+  classes, system.SysUtils, windows, System.Generics.Collections,
+  VirtualTrees, VCLTee.Control, System.Generics.Defaults;
+
+type
+TCollectionForSort = class(TPersistent)
+  private
+    FItemClass: TCollectionItemClass;
+    FItems: TList<TCollectionItem>;
+  end;
+
+TFindedResult = record
+  PropIndex: Word;
+  DataPos: Cardinal;
+end;
+
+TTeeGRD = class(VCLTee.Grid.TTeeGrid);
+
+TLogicalCL011 = (
+    Is_);
+TlogicalCL011Set = set of TLogicalCL011;
+
+
+TCL011Item = class(TBaseItem)
+  public
+    type
+      TPropertyIndex = (
+       CL011_Key
+       , CL011_Description
+       , CL011_DescriptionEn
+       , CL011_cl148
+       , CL011_is_chronic
+       , CL011_Logical
+       );
+	  
+      TSetProp = set of TPropertyIndex;
+      PSetProp = ^TSetProp;
+      PRecCL011 = ^TRecCL011;
+      TRecCL011 = record
+        Key: AnsiString;
+        Description: AnsiString;
+        DescriptionEn: AnsiString;
+        cl148: AnsiString;
+        is_chronic: AnsiString;
+        Logical: TlogicalCL011Set;
+        setProp: TSetProp;
+      end;
+
+  public
+    PRecord: ^TRecCL011;
+	IndexInt: Integer;
+	IndexWord: Word;
+	IndexAnsiStr: PAnsiChar;
+    IndexAnsiStr1: AnsiString;
+    IndexField: TPropertyIndex;
+	
+    constructor Create(Collection: TCollection); override;
+    destructor Destroy; override;
+    procedure InsertCL011;
+    procedure UpdateCL011;
+    procedure SaveCL011(var dataPosition: Cardinal)overload;
+	procedure SaveCL011(Abuf: Pointer; var dataPosition: Cardinal)overload;
+	function IsFullFinded(buf: Pointer; FPosDataADB: Cardinal; coll: TCollection): Boolean; override;
+	function GetPRecord: Pointer; override;
+    procedure FillPRecord(SetOfProp: TParamSetProp; arrstr: TArray<string>); override;
+    function GetCollType: TCollectionsType; override;
+	procedure ReadCmd(stream: TStream; vtrTemp: TVirtualStringTree; vCmd: PVirtualNode; CmdItem: TCmdItem);
+	procedure FillPropCL011(propindex: TPropertyIndex; stream: TStream);
+  end;
+
+
+  TCL011Coll = class(TBaseCollection)
+  private
+    FSearchingInt: Integer;
+    FSearchingValue: string;
+	tempItem: TCL011Item;
+    function GetItem(Index: Integer): TCL011Item;
+    procedure SetItem(Index: Integer; const Value: TCL011Item);
+    procedure SetSearchingValue(const Value: string);
+  public
+    FindedRes: TFindedResult;
+	linkOptions: TMappedLinkFile;
+	ListForFinder: TList<TCL011Item>;
+    ListCL011Search: TList<TCL011Item>;
+	PRecordSearch: ^TCL011Item.TRecCL011;
+    ArrPropSearch: TArray<TCL011Item.TPropertyIndex>;
+    ArrPropSearchClc: TArray<TCL011Item.TPropertyIndex>;
+	VisibleColl: TCL011Item.TSetProp;
+	ArrayPropOrder: TArray<TCL011Item.TPropertyIndex>;
+    ArrayPropOrderSearchOptions: TArray<integer>;
+
+    constructor Create(ItemClass: TCollectionItemClass);override;
+    destructor destroy; override;
+
+    function AddItem(ver: word):TCL011Item;
+	function AddItemForSearch: Integer;
+    procedure GetCell(Sender:TObject; const AColumn:TColumn; const ARow:Integer; var AValue:String);
+	procedure GetCellSearch(Sender:TObject; const AColumn:TColumn; const ARow:Integer; var AValue:String);
+    procedure GetCellDataPos(Sender:TObject; const AColumn:TColumn; const ARow:Integer; var AValue:String);override;
+    function PropType(propIndex: Word): TAspectTypeKind; override;
+    procedure GetCellList(Sender:TObject; const AColumn:TColumn; const ARow:Integer; var AValue:String);
+	procedure GetCellFromMap(propIndex: word; ARow: Integer; CL011: TCL011Item; var AValue:String);
+    procedure GetCellFromRecord(propIndex: word; CL011: TCL011Item; var AValue:String);
+	procedure GetCellListNodes(Sender:TObject; const AColumn:TColumn; const ARow:Integer; var AValue:String);override;
+    procedure SetCell(Sender:TObject; const AColumn:TColumn; const ARow:Integer; var AValue:String);
+	procedure GetFieldText(Sender:TObject; const ACol, ARow:Integer; var AFieldText:String);
+    procedure SetFieldText(Sender:TObject; const ACol, ARow:Integer; var AFieldText:String);
+    procedure SortByIndexValue(propIndex: TCL011Item.TPropertyIndex);
+    procedure SortByIndexInt;
+	procedure SortByIndexWord;
+    procedure SortByIndexAnsiString;
+	procedure DoColMoved(const Acol: TColumn; const OldPos, NewPos: Integer);override;
+
+	function DisplayName(propIndex: Word): string; override;
+	function DisplayLogicalName(flagIndex: Integer): string;
+	function RankSortOption(propIndex: Word): cardinal; override;
+    function FindRootCollOptionNode(): PVirtualNode; override;
+    function FindSearchFieldCollOptionGridNode(): PVirtualNode;
+    function FindSearchFieldCollOptionCOTNode(): PVirtualNode;
+    function FindSearchFieldCollOptionNode(): PVirtualNode;
+    function CreateRootCollOptionNode(): PVirtualNode;
+    procedure OrderFieldsSearch1(Grid: TTeeGrid);override;
+	function FieldCount: Integer; override;
+	procedure ShowGrid(Grid: TTeeGrid);override;
+	procedure ShowGridFromList(Grid: TTeeGrid; LST: TList<TCL011Item>);
+	procedure ShowSearchedGrid(Grid: TTeeGrid);
+    
+    procedure IndexValue(propIndex: TCL011Item.TPropertyIndex);
+	procedure IndexValueListNodes(propIndex:  TCL011Item.TPropertyIndex);
+    property Items[Index: Integer]: TCL011Item read GetItem write SetItem;
+	procedure OnGetTextDynFMX(sender: TObject; field: Word; index: Integer; datapos: Cardinal; var value: string);
+    property SearchingValue: string read FSearchingValue write SetSearchingValue;
+    procedure OnSetTextSearchEDT(Text: string; field: Word; Condition: TConditionSet);
+	procedure OnSetDateSearchEDT(Value: TDate; field: Word; Condition: TConditionSet);
+    procedure OnSetNumSearchEDT(Value: Integer; field: Word; Condition: TConditionSet);
+    procedure OnSetLogicalSearchEDT(Value: Boolean; field, logIndex: Word);
+    procedure OnSetTextSearchLog(Log: TlogicalCL011Set);
+	procedure CheckForSave(var cnt: Integer);
+	function IsCollVisible(PropIndex: Word): Boolean; override;
+    procedure ApplyVisibilityFromTree(RootNode: PVirtualNode);override;
+	function GetCollType: TCollectionsType; override;
+	function GetCollDelType: TCollectionsType; override;
+	procedure ImportXMLNzis(cl000: TObject);
+  end;
+
+implementation
+uses
+  Nzis.Nomen.baseCL000, System.Rtti;
+
+{ TCL011Item }
+
+constructor TCL011Item.Create(Collection: TCollection);
+begin
+  inherited;
+end;
+
+destructor TCL011Item.Destroy;
+begin
+  if Assigned(PRecord) then
+    Dispose(PRecord);
+  inherited;
+end;
+
+procedure TCL011Item.FillPRecord(SetOfProp: TParamSetProp; arrstr: TArray<string>);
+var
+  paramField: TParamProp;
+  setPropPat: TSetProp;
+  i: Integer;
+  PropertyIndex: TPropertyIndex;
+begin
+  i := 0;
+  for paramField in SetOfProp do
+  begin
+    PropertyIndex := TPropertyIndex(byte(paramField));
+    Include(Self.PRecord.setProp, PropertyIndex);
+    //case PropertyIndex of
+      //PatientNew_EGN: Self.PRecord.EGN := arrstr[i];
+    //end;
+    inc(i);
+  end;
+end;
+
+function TCL011Item.GetCollType: TCollectionsType;
+begin
+  Result := ctCL011;
+end;
+
+function TCL011Item.GetPRecord: Pointer;
+begin
+  result := Pointer(PRecord);
+end;
+
+procedure TCL011Item.InsertCL011;
+var
+  CollType: TCollectionsType;
+  metaPosition, dataPosition, PropPosition: cardinal;
+  FPosMetaData, FLenMetaData, FPosData, FLenData: Cardinal;
+  propIndx: TPropertyIndex;
+  pCardinalData: ^Cardinal;
+  pWordData: ^Word;
+begin
+  CollType := Aspects.Types.TCollectionsType.ctCL011;
+  pCardinalData := pointer(PByte(buf));
+  FPosMetaData := pCardinalData^;
+  pCardinalData := pointer(PByte(buf) + 4);
+  FLenMetaData := pCardinalData^;
+  metaPosition :=  FPosMetaData + FLenMetaData;
+
+  pCardinalData := pointer(PByte(buf) + 8);
+  FPosData := pCardinalData^;
+  pCardinalData := pointer(PByte(buf) + 12);
+  FLenData := pCardinalData^;
+  dataPosition :=  FPosData + FLenData;
+  SaveAnyStreamCommand(@PRecord.setProp, SizeOf(PRecord.setProp), CollType, toInsert, FVersion, metaPosition + 4);
+  case FVersion of
+    0:
+    begin
+      pWordData := pointer(PByte(buf) + metaPosition);
+      pWordData^  := word(CollType);
+      pWordData := pointer(PByte(buf) + metaPosition + 2);
+      pWordData^  := FVersion;
+      inc(metaPosition, 4);
+	  Self.DataPos := metaPosition;
+	  
+      for propIndx := Low(TPropertyIndex) to High(TPropertyIndex) do
+      begin
+        if Assigned(PRecord) and (propIndx in PRecord.setProp) then
+        begin
+          case propIndx of
+            CL011_Key: SaveData(PRecord.Key, PropPosition, metaPosition, dataPosition);
+            CL011_Description: SaveData(PRecord.Description, PropPosition, metaPosition, dataPosition);
+            CL011_DescriptionEn: SaveData(PRecord.DescriptionEn, PropPosition, metaPosition, dataPosition);
+            CL011_cl148: SaveData(PRecord.cl148, PropPosition, metaPosition, dataPosition);
+            CL011_is_chronic: SaveData(PRecord.is_chronic, PropPosition, metaPosition, dataPosition);
+            CL011_Logical: SaveData(TLogicalData08(PRecord.Logical), PropPosition, metaPosition, dataPosition);
+          end;
+        end
+        else
+        begin
+          SaveNull(metaPosition);
+        end;
+      end;
+      pCardinalData := pointer(PByte(buf) + 4);
+      pCardinalData^  := metaPosition - FPosMetaData;
+      pCardinalData := pointer(PByte(buf) + 12);
+      pCardinalData^  := dataPosition - FPosData;
+    end;
+  end;
+end;
+
+function  TCL011Item.IsFullFinded(buf: Pointer; FPosDataADB: Cardinal; coll: TCollection): Boolean;
+var
+  i: Integer;
+  pidx:  TCL011Item.TPropertyIndex;
+  cot: TConditionSet;
+  ATempItem: TCL011Item;
+begin
+  Result := True;
+  for i := 0 to Length(TCL011Coll(coll).ArrPropSearchClc) - 1 do
+  begin
+    if Result = false then
+      Exit;
+    pidx := TCL011Coll(coll).ArrPropSearchClc[i];
+	ATempItem := TCL011Coll(coll).ListForFinder.Items[0];
+    cot := ATempItem.ArrCondition[word(pidx)];
+    begin
+      case pidx of
+        CL011_Key: Result := IsFinded(ATempItem.PRecord.Key, buf, FPosDataADB, word(CL011_Key), cot);
+            CL011_Description: Result := IsFinded(ATempItem.PRecord.Description, buf, FPosDataADB, word(CL011_Description), cot);
+            CL011_DescriptionEn: Result := IsFinded(ATempItem.PRecord.DescriptionEn, buf, FPosDataADB, word(CL011_DescriptionEn), cot);
+            CL011_cl148: Result := IsFinded(ATempItem.PRecord.cl148, buf, FPosDataADB, word(CL011_cl148), cot);
+            CL011_is_chronic: Result := IsFinded(ATempItem.PRecord.is_chronic, buf, FPosDataADB, word(CL011_is_chronic), cot);
+            CL011_Logical: Result := IsFinded(TLogicalData08(ATempItem.PRecord.Logical), buf, FPosDataADB, word(CL011_Logical), cot);
+      end;
+    end;
+  end;
+end;
+
+procedure TCL011Item.ReadCmd(stream: TStream; vtrTemp: TVirtualStringTree;
+  vCmd: PVirtualNode; CmdItem: TCmdItem);
+var
+  delta: integer;
+  flds08: TLogicalData08;
+  propindexCL011: TCL011Item.TPropertyIndex;
+  vCmdProp: PVirtualNode;
+  dataCmdProp: PAspRec;
+begin
+  delta := sizeof(TLogicalData128) - sizeof(TLogicalData08);
+  stream.Read(flds08, sizeof(TLogicalData08));
+  stream.Position := stream.Position + delta;
+  New(self.PRecord);
+
+  self.PRecord.setProp := TCL011Item.TSetProp(flds08);// тука се записва какво има като полета
+
+
+  for propindexCL011 := Low(TCL011Item.TPropertyIndex) to High(TCL011Item.TPropertyIndex) do
+  begin
+    if not (propindexCL011 in self.PRecord.setProp) then
+      continue;
+    if vtrTemp <> nil then
+    begin
+      vCmdProp := vtrTemp.AddChild(vCmd, nil);
+      dataCmdProp := vtrTemp.GetNodeData(vCmdProp);
+      dataCmdProp.index := word(propindexCL011);
+      dataCmdProp.vid := vvPregled;
+    end;
+    self.FillPropCL011(propindexCL011, stream);
+  end;
+
+  CmdItem.AdbItem := self;
+end;
+
+procedure TCL011Item.FillPropCL011(propindex: TPropertyIndex;
+  stream: TStream);
+var
+  lenStr: Word;
+begin
+  case propindex of
+    CL011_Key:
+        begin
+          stream.Read(lenStr, 2);
+          SetLength(Self.PRecord.Key, lenStr);
+          stream.Read(Self.PRecord.Key[1], lenStr);
+        end;
+            CL011_Description:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.Description, lenStr);
+              stream.Read(Self.PRecord.Description[1], lenStr);
+            end;
+            CL011_DescriptionEn:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.DescriptionEn, lenStr);
+              stream.Read(Self.PRecord.DescriptionEn[1], lenStr);
+            end;
+            CL011_cl148:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.cl148, lenStr);
+              stream.Read(Self.PRecord.cl148[1], lenStr);
+            end;
+            CL011_is_chronic:
+            begin
+              stream.Read(lenStr, 2);
+              SetLength(Self.PRecord.is_chronic, lenStr);
+              stream.Read(Self.PRecord.is_chronic[1], lenStr);
+            end;
+            CL011_Logical: stream.Read(Self.PRecord.Logical, SizeOf(TLogicalData08));
+  end;
+end;
+
+procedure TCL011Item.SaveCL011(Abuf: Pointer; var dataPosition: Cardinal);
+var
+  pCardinalData: PCardinal;
+  APosData, ALenData: Cardinal;
+begin
+  pCardinalData := pointer(PByte(ABuf) + 8);
+  APosData := pCardinalData^;
+  pCardinalData := pointer(PByte(ABuf) + 12);
+  ALenData := pCardinalData^;
+  dataPosition :=  ALenData + APosData;
+  SaveCL011(dataPosition);
+end;
+
+procedure TCL011Item.SaveCL011(var dataPosition: Cardinal);
+var
+  CollType: TCollectionsType;
+  metaPosition, PropPosition: cardinal;
+  propIndx: TPropertyIndex;
+begin
+  CollType := ctCL011;
+  SaveAnyStreamCommand(@PRecord.setProp, SizeOf(PRecord.setProp), CollType, toUpdate, FVersion, dataPosition);
+  case FVersion of
+    0:
+    begin
+      for propIndx := Low(TPropertyIndex) to High(TPropertyIndex) do
+      begin
+        if propIndx in PRecord.setProp then
+        begin
+          SaveHeaderData(PropPosition, dataPosition);
+          metaPosition := FDataPos + 4 * Integer(propIndx);
+          case propIndx of
+            CL011_Key: SaveData(PRecord.Key, PropPosition, metaPosition, dataPosition);
+            CL011_Description: SaveData(PRecord.Description, PropPosition, metaPosition, dataPosition);
+            CL011_DescriptionEn: SaveData(PRecord.DescriptionEn, PropPosition, metaPosition, dataPosition);
+            CL011_cl148: SaveData(PRecord.cl148, PropPosition, metaPosition, dataPosition);
+            CL011_is_chronic: SaveData(PRecord.is_chronic, PropPosition, metaPosition, dataPosition);
+            CL011_Logical: SaveData(TLogicalData08(PRecord.Logical), PropPosition, metaPosition, dataPosition);
+          end;
+        end
+        else
+        begin
+          //SaveNull(metaPosition);
+        end;
+      end;
+      Dispose(PRecord);
+      PRecord := nil;
+    end;
+  end;
+end;
+
+procedure TCL011Item.UpdateCL011;
+var
+  CollType: TCollectionsType;
+  metaPosition, dataPosition, PropPosition: cardinal;
+  propIndx: TPropertyIndex;
+begin
+  CollType := ctCL011;
+  case FVersion of
+    0:
+    begin
+      for propIndx := Low(TPropertyIndex) to High(TPropertyIndex) do
+      begin
+        if propIndx in PRecord.setProp then
+        begin
+          UpdateHeaderData(PropPosition, dataPosition);
+          metaPosition := FDataPos + 4 * Integer(propIndx);
+          case propIndx of
+            CL011_Key: UpdateData(PRecord.Key, PropPosition, metaPosition, dataPosition);
+            CL011_Description: UpdateData(PRecord.Description, PropPosition, metaPosition, dataPosition);
+            CL011_DescriptionEn: UpdateData(PRecord.DescriptionEn, PropPosition, metaPosition, dataPosition);
+            CL011_cl148: UpdateData(PRecord.cl148, PropPosition, metaPosition, dataPosition);
+            CL011_is_chronic: UpdateData(PRecord.is_chronic, PropPosition, metaPosition, dataPosition);
+          end;
+        end
+        else
+        begin
+          //SaveNull(metaPosition);
+        end;
+      end;
+      Dispose(PRecord);
+      PRecord := nil;
+    end;
+  end;
+end;
+
+{ TCL011Coll }
+
+function TCL011Coll.AddItem(ver: word): TCL011Item;
+begin
+  Result := TCL011Item(add);
+  Result.Version := ver;
+  case ver of // в зависимост от версията на записа
+    0:
+    begin
+    end;
+  end;
+end;
+
+function TCL011Coll.AddItemForSearch: Integer;
+var
+  ItemForSearch: TCL011Item;
+begin
+  ItemForSearch := TCL011Item.Create(nil);
+  SetLength(ItemForSearch.ArrCondition, self.FieldCount);
+
+  New(ItemForSearch.PRecord);
+  ItemForSearch.PRecord.setProp := [];
+  ItemForSearch.PRecord.Logical := [];
+  Result := ListForFinder.Add(ItemForSearch);
+end;
+
+procedure TCL011Coll.ApplyVisibilityFromTree(RootNode: PVirtualNode);
+var
+  run: PVirtualNode;
+  data: PAspRec;
+begin
+  VisibleColl := [];
+
+  run := RootNode.FirstChild;
+  while run <> nil do
+  begin
+    data := PAspRec(PByte(run) + lenNode);
+
+    if run.CheckState = csCheckedNormal then
+      Include(VisibleColl, TCL011Item.TPropertyIndex(run.Dummy - 1));
+
+    run := run.NextSibling;
+  end;
+end;
+
+
+function TCL011Coll.CreateRootCollOptionNode(): PVirtualNode;
+var
+  NodeRoot, vOptionSearchGrid, vOptionSearchCOT, run: PVirtualNode;
+  linkPos: Cardinal;
+  pCardinalData: PCardinal;
+  i: Integer;
+begin
+  NodeRoot := Pointer(PByte(linkOptions.Buf) + 100);
+  linkOptions.AddNewNode(vvCL011Root, 0, NodeRoot , amAddChildLast, result, linkPos);
+  linkOptions.AddNewNode(vvOptionSearchGrid, 0, Result , amAddChildLast, vOptionSearchGrid, linkPos);
+  linkOptions.AddNewNode(vvOptionSearchCot, 0, Result , amAddChildLast, vOptionSearchCOT, linkPos);
+
+  vOptionSearchGrid.CheckType := ctTriStateCheckBox;
+
+  if vOptionSearchGrid.ChildCount <> FieldCount then
+  begin
+    for i := 0 to FieldCount - 1 do
+    begin
+      linkOptions.AddNewNode(vvFieldSearchGridOption, 0, vOptionSearchGrid , amAddChildLast, run, linkPos);
+      run.Dummy := i + 1;
+	  run.CheckType := ctCheckBox;
+      run.CheckState := csCheckedNormal;
+    end;
+  end
+  else
+  begin
+    // при евентуално добавена колонка...
+  end;  
+end;
+
+procedure TCL011Coll.CheckForSave(var cnt: Integer);
+var
+  i: Integer;
+  tempItem: TCL011Item;
+begin
+  for i := 0 to Self.Count - 1 do
+  begin
+    tempItem := Items[i];
+    if tempItem.PRecord <> nil then
+    begin
+	  // === проверки за запазване (CheckForSave) ===
+
+  if (CL011_Key in tempItem.PRecord.setProp) and (tempItem.PRecord.Key <> Self.getAnsiStringMap(tempItem.DataPos, word(CL011_Key))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL011_Description in tempItem.PRecord.setProp) and (tempItem.PRecord.Description <> Self.getAnsiStringMap(tempItem.DataPos, word(CL011_Description))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL011_DescriptionEn in tempItem.PRecord.setProp) and (tempItem.PRecord.DescriptionEn <> Self.getAnsiStringMap(tempItem.DataPos, word(CL011_DescriptionEn))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL011_cl148 in tempItem.PRecord.setProp) and (tempItem.PRecord.cl148 <> Self.getAnsiStringMap(tempItem.DataPos, word(CL011_cl148))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL011_is_chronic in tempItem.PRecord.setProp) and (tempItem.PRecord.is_chronic <> Self.getAnsiStringMap(tempItem.DataPos, word(CL011_is_chronic))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+
+  if (CL011_Logical in tempItem.PRecord.setProp) and (TLogicalData08(tempItem.PRecord.Logical) <> Self.getLogical08Map(tempItem.DataPos, word(CL011_Logical))) then
+  begin
+    inc(cnt);
+    exit;
+  end;
+    end;
+  end;
+end;
+
+
+constructor TCL011Coll.Create(ItemClass: TCollectionItemClass);
+var
+  i: Integer;
+begin
+  inherited;
+  tempItem := TCL011Item.Create(nil);
+  ListCL011Search := TList<TCL011Item>.Create;
+  ListForFinder := TList<TCL011Item>.Create;
+  New(PRecordSearch);
+  PRecordSearch.setProp := [];
+  SetLength(ArrayPropOrderSearchOptions, FieldCount + 1);
+  ArrayPropOrderSearchOptions[0] := FieldCount;
+  for i := 1 to FieldCount do
+  begin
+    ArrayPropOrderSearchOptions[i] := i;
+  end;
+
+end;
+
+destructor TCL011Coll.destroy;
+begin
+  FreeAndNil(ListCL011Search);
+  FreeAndNil(ListForFinder);
+  FreeAndNil(TempItem);
+  Dispose(PRecordSearch);
+  PRecordSearch := nil;
+  inherited;
+end;
+
+function TCL011Coll.DisplayName(propIndex: Word): string;
+begin
+  inherited;
+  case TCL011Item.TPropertyIndex(propIndex) of
+    CL011_Key: Result := 'Key';
+    CL011_Description: Result := 'Description';
+    CL011_DescriptionEn: Result := 'DescriptionEn';
+    CL011_cl148: Result := 'cl148';
+    CL011_is_chronic: Result := 'is_chronic';
+    CL011_Logical: Result := 'Logical';
+  end;
+end;
+
+function TCL011Coll.DisplayLogicalName(flagIndex: Integer): string;
+begin
+  case flagIndex of
+0: Result := 'Is_';
+  else
+    Result := '???';
+  end;
+end;
+
+
+procedure TCL011Coll.DoColMoved(const Acol: TColumn; const OldPos, NewPos: Integer);
+var
+  FieldCollOptionNode, run: PVirtualNode;
+  pSource, pTarget: PVirtualNode;
+begin
+  inherited;
+  if linkOptions = nil then Exit;
+
+  FieldCollOptionNode := FindSearchFieldCollOptionGridNode;
+  run := FieldCollOptionNode.FirstChild;
+  pSource := nil;
+  pTarget := nil;
+  while run <> nil do
+  begin
+    if run.Index = NewPos - 1 then
+    begin
+      pTarget := run;
+    end;
+    if run.index = OldPos - 1 then
+    begin
+      pSource := run;
+    end;
+    run := run.NextSibling;
+  end;
+
+  if pTarget = nil then Exit;
+  if pSource = nil then Exit;
+  //ShowMessage(Format('pSource = %d, pTarget = %d', [pSource.Index, pTarget.Index]));
+  if pSource.Index < pTarget.Index then
+  begin
+    linkOptions.FVTR.MoveTo(pSource, pTarget, amInsertAfter, False);
+  end
+  else
+  begin
+    linkOptions.FVTR.MoveTo(pSource, pTarget, amInsertBefore, False);
+  end;
+  run := FieldCollOptionNode.FirstChild;
+  while run <> nil do
+  begin
+    ArrayPropOrderSearchOptions[run.index + 1] :=  run.Dummy - 1;
+    run := run.NextSibling;
+  end; 
+end;
+
+
+function TCL011Coll.FieldCount: Integer; 
+begin
+  inherited;
+  Result := 6;
+end;
+
+function TCL011Coll.FindRootCollOptionNode(): PVirtualNode;
+var
+  linkPos: Cardinal;
+  pCardinalData: PCardinal;
+  PosLinkData: Cardinal;
+  Run: PVirtualNode;
+  data: PAspRec;
+begin
+  Result := nil;
+  linkPos := 100;
+  pCardinalData := pointer(PByte(linkOptions.Buf));
+  PosLinkData := pCardinalData^;
+
+  while linkPos <= PosLinkData do
+  begin
+    Run := pointer(PByte(linkOptions.Buf) + linkpos);
+    data := Pointer(PByte(Run)+ lenNode);
+    if data.vid = vvCL011Root then
+    begin
+      Result := Run;
+	  data := Pointer(PByte(Result)+ lenNode);
+      data.DataPos := Cardinal(Self);
+      Exit;
+    end;
+    inc(linkPos, LenData);
+  end;
+  if Result = nil then
+    Result := CreateRootCollOptionNode;
+  if Result <> nil then
+  begin
+    data := Pointer(PByte(Result)+ lenNode);
+    data.DataPos := Cardinal(Self);
+  end;
+end;
+
+function TCL011Coll.FindSearchFieldCollOptionCOTNode: PVirtualNode;
+var
+  run, vRootPregOptions: PVirtualNode;
+  dataRun: PAspRec;
+begin
+  vRootPregOptions := self.FindRootCollOptionNode();
+  result := nil;
+
+  run := vRootPregOptions.FirstChild;
+  while run <> nil do
+  begin
+    dataRun := pointer(PByte(run) + lenNode);
+    case dataRun.vid of
+      vvOptionSearchCot: result := run;
+    end;
+    run := run.NextSibling;
+  end;
+end;
+
+function TCL011Coll.FindSearchFieldCollOptionGridNode: PVirtualNode;
+var
+  run, vRootPregOptions: PVirtualNode;
+  dataRun: PAspRec;
+begin
+  vRootPregOptions := self.FindRootCollOptionNode();
+
+  result := nil;
+
+  run := vRootPregOptions.FirstChild;
+  while run <> nil do
+  begin
+    dataRun := pointer(PByte(run) + lenNode);
+    case dataRun.vid of
+      vvOptionSearchGrid: result := run;
+    end;
+    run := run.NextSibling;
+  end;
+end;
+
+function TCL011Coll.FindSearchFieldCollOptionNode(): PVirtualNode;
+var
+  linkPos: Cardinal;
+  run, vOptionSearchGrid, vOptionSearchCOT, vRootPregOptions: PVirtualNode;
+  i: Integer;
+  dataRun: PAspRec;
+begin
+  vRootPregOptions := self.FindRootCollOptionNode();
+  if vRootPregOptions = nil then
+    vRootPregOptions := CreateRootCollOptionNode;
+  vOptionSearchGrid := nil;
+  vOptionSearchCOT := nil;
+
+  run := vRootPregOptions.FirstChild;
+  while run <> nil do
+  begin
+    dataRun := pointer(PByte(run) + lenNode);
+    case dataRun.vid of
+      vvOptionSearchGrid: vOptionSearchGrid := run;
+      vvOptionSearchCot: vOptionSearchCOT := run;
+    end;
+
+    run := run.NextSibling;
+  end;
+  if vOptionSearchGrid = nil then
+  begin
+    linkOptions.AddNewNode(vvOptionSearchGrid, 0, vRootPregOptions , amAddChildLast, vOptionSearchGrid, linkPos);
+  end;
+  if vOptionSearchCOT = nil then
+  begin
+    linkOptions.AddNewNode(vvOptionSearchCot, 0, vRootPregOptions , amAddChildLast, vOptionSearchGrid, linkPos);
+  end;
+
+  Result := vOptionSearchGrid;
+  if vOptionSearchGrid.ChildCount <> FieldCount then
+  begin
+    for i := 0 to FieldCount - 1 do
+    begin
+      linkOptions.AddNewNode(vvFieldSearchGridOption, 0, vOptionSearchGrid , amAddChildLast, run, linkPos);
+      run.Dummy := i;
+    end;
+  end
+  else
+  begin
+    // при евентуално добавена колонка...
+  end;
+end;
+
+procedure TCL011Coll.GetCell(Sender: TObject; const AColumn: TColumn; const ARow: Integer; var AValue: String);
+var
+  CL011: TCL011Item;
+  ACol: Integer;
+  prop: TCL011Item.TPropertyIndex;
+begin
+  ACol := TVirtualModeData(Sender).IndexOf(AColumn);
+  if Count = 0 then Exit;
+
+  CL011 := Items[ARow];
+  prop := TCL011Item.TPropertyIndex(ACol);
+  if Assigned(CL011.PRecord) and (prop in CL011.PRecord.setProp) then
+  begin
+    GetCellFromRecord(ACol, CL011, AValue);
+  end
+  else
+  begin
+    GetCellFromMap(ACol, ARow, CL011, AValue);
+  end;
+end;
+
+procedure TCL011Coll.GetCellDataPos(Sender: TObject; const AColumn: TColumn; const ARow:Integer; var AValue: String);
+var
+  RowSelect: Integer;
+  prop: TCL011Item.TPropertyIndex;
+begin
+  inherited;
+ 
+  if ARow < 0 then
+  begin
+    AValue := 'hhhh';
+    Exit;
+  end;
+  try
+    if (ListDataPos.count - 1 - Self.offsetTop - Self.offsetBottom) < ARow then exit;
+    RowSelect := ARow + Self.offsetTop;
+    TempItem.DataPos := PAspRec(Pointer(PByte(ListDataPos[ARow]) + lenNode)).DataPos;
+  except
+    AValue := 'ddddd';
+    Exit;
+  end;
+
+  GetCellFromMap(ArrayPropOrderSearchOptions[AColumn.Index], RowSelect, TempItem, AValue);
+end;
+
+procedure TCL011Coll.GetCellFromRecord(propIndex: word; CL011: TCL011Item; var AValue: String);
+var
+  str: string;
+begin
+  case TCL011Item.TPropertyIndex(propIndex) of
+    CL011_Key: str := (CL011.PRecord.Key);
+    CL011_Description: str := (CL011.PRecord.Description);
+    CL011_DescriptionEn: str := (CL011.PRecord.DescriptionEn);
+    CL011_cl148: str := (CL011.PRecord.cl148);
+    CL011_is_chronic: str := (CL011.PRecord.is_chronic);
+    CL011_Logical: str := CL011.Logical08ToStr(TLogicalData08(CL011.PRecord.Logical));
+  else
+    begin
+      str := '';
+    end;
+  end;
+  AValue := str;
+end;
+
+procedure TCL011Coll.GetCellList(Sender: TObject; const AColumn: TColumn; const ARow: Integer; var AValue: String);
+var
+  AtempItem: TCL011Item;
+  ACol: Integer;
+  prop: TCL011Item.TPropertyIndex;
+begin
+  ACol := TVirtualModeData(Sender).IndexOf(AColumn);
+  if ListForFinder.Count = 0 then Exit;
+
+  AtempItem := ListForFinder[ARow];
+  prop := TCL011Item.TPropertyIndex(ACol);
+  if Assigned(AtempItem.PRecord) and (prop in AtempItem.PRecord.setProp) then
+  begin
+    GetCellFromRecord(ACol, AtempItem, AValue);
+  end
+  else
+  begin
+    GetCellFromMap(ACol, ARow, AtempItem, AValue);
+  end;
+end;
+
+procedure TCL011Coll.GetCellListNodes(Sender: TObject; const AColumn: TColumn; const ARow: Integer; var AValue: String);
+var
+  ACol: Integer;
+  prop: TCL011Item.TPropertyIndex;
+begin
+  inherited;
+  ACol := TVirtualModeData(Sender).IndexOf(AColumn);
+  if (ListNodes.count - 1) < ARow then exit;
+  
+  TempItem.DataPos := ListNodes[ARow].DataPos;
+  prop := TCL011Item.TPropertyIndex(ACol);
+  GetCellFromMap(ACol, ARow, TempItem, AValue);
+end;
+
+procedure TCL011Coll.GetCellSearch(Sender: TObject; const AColumn: TColumn; const ARow: Integer; var AValue: String);
+var
+  CL011: TCL011Item;
+  ACol: Integer;
+  prop: TCL011Item.TPropertyIndex;
+begin
+  ACol := TVirtualModeData(Sender).IndexOf(AColumn);
+  if Count = 0 then Exit;
+
+  CL011 := ListCL011Search[ARow];
+  prop := TCL011Item.TPropertyIndex(ACol);
+  if Assigned(CL011.PRecord) and (prop in CL011.PRecord.setProp) then
+  begin
+    GetCellFromRecord(ACol, CL011, AValue);
+  end
+  else
+  begin
+    GetCellFromMap(ACol, ARow, CL011, AValue);
+  end;
+end;
+
+function TCL011Coll.GetCollType: TCollectionsType;
+begin
+  Result := ctCL011;
+end;
+
+function TCL011Coll.GetCollDelType: TCollectionsType;
+begin
+  Result := ctCL011Del;
+end;
+
+procedure TCL011Coll.GetFieldText(Sender: TObject; const ACol, ARow: Integer; var AFieldText: String);
+var
+  CL011: TCL011Item;
+  prop: TCL011Item.TPropertyIndex;
+begin
+  if Count = 0 then Exit;
+
+  CL011 := Items[ARow];
+  prop := TCL011Item.TPropertyIndex(ACol);
+  if Assigned(CL011.PRecord) and (prop in CL011.PRecord.setProp) then
+  begin
+    GetCellFromRecord(ACol, CL011, AFieldText);
+  end
+  else
+  begin
+    GetCellFromMap(ACol, ARow, CL011, AFieldText);
+  end;
+end;
+
+procedure TCL011Coll.GetCellFromMap(propIndex: word; ARow: Integer; CL011: TCL011Item; var AValue: String);
+var
+  str: string;
+  len: Word;
+  int: PInt;
+  wrd: PWord;
+  bt: PByte;
+  pstr: pchar;
+  pDbl: PDouble;
+  pbl: PBoolean;
+begin
+  case TCL011Item.TPropertyIndex(propIndex) of
+    CL011_Key: str :=  CL011.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL011_Description: str :=  CL011.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL011_DescriptionEn: str :=  CL011.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL011_cl148: str :=  CL011.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL011_is_chronic: str :=  CL011.getAnsiStringMap(Self.Buf, Self.posData, propIndex);
+    CL011_Logical: str :=  CL011.Logical08ToStr(CL011.getLogical08Map(Self.Buf, Self.posData, propIndex));
+  else
+    begin
+      str := IntToStr(ARow + 1);
+    end;
+  end;
+  AValue := str;
+end;
+
+function TCL011Coll.GetItem(Index: Integer): TCL011Item;
+begin
+  Result := TCL011Item(inherited GetItem(Index));
+end;
+
+
+procedure TCL011Coll.IndexValue(propIndex: TCL011Item.TPropertyIndex);
+var
+  i: Integer;
+  len: Word;
+  TempItem: TCL011Item;
+begin
+  for i := 0 to self.Count - 1 do
+  begin
+    TempItem := self.Items[i];
+    case propIndex of
+      CL011_Key:
+begin
+  TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+  if TempItem.IndexAnsiStr <> nil then
+  begin
+    TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+  end
+  else
+    TempItem.IndexAnsiStr1 := '';
+end;
+      CL011_Description:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL011_DescriptionEn:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL011_cl148:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+      CL011_is_chronic:
+      begin
+        TempItem.IndexAnsiStr :=  TempItem.getPAnsiStringMap(Self.Buf, self.posData, word(propIndex), len);
+        if TempItem.IndexAnsiStr <> nil then
+        begin
+          TempItem.IndexAnsiStr1 := AnsiString(TempItem.IndexAnsiStr);
+        end
+        else
+          TempItem.IndexAnsiStr1 := '';
+      end;
+    end;
+  end;
+end;
+
+procedure TCL011Coll.IndexValueListNodes(propIndex: TCL011Item.TPropertyIndex);
+begin
+
+end;
+
+function TCL011Coll.IsCollVisible(PropIndex: Word): Boolean;
+begin
+  Result  := TCL011Item.TPropertyIndex(PropIndex) in  VisibleColl;
+end;
+
+
+procedure TCL011Coll.OnGetTextDynFMX(sender: TObject; field: Word; index: Integer; datapos: Cardinal; var value: string);
+var
+  Tempitem: TCL011Item;
+begin
+  if index < 0 then
+  begin
+    Tempitem := TCL011Item.Create(nil);
+    Tempitem.DataPos := datapos;
+    GetCellFromMap(field, -1, Tempitem, value);
+    Tempitem.Free;
+  end
+  else
+  begin
+    Tempitem := Self.Items[index];
+    if Assigned(Tempitem.PRecord) then
+    begin
+      GetCellFromRecord(field, Tempitem, value);
+    end
+    else
+    begin
+      GetCellFromMap(field, index, Tempitem, value);
+    end;
+  end;
+end;
+
+{=== TEXT SEARCH HANDLER ===}
+procedure TCL011Coll.OnSetTextSearchEDT(Text: string; field: Word; Condition: TConditionSet);
+var
+  AText: string;
+begin
+  if Text = '' then
+  begin
+    Exclude(ListForFinder[0].PRecord.setProp, TCL011Item.TPropertyIndex(Field));
+  end
+  else
+  begin
+    if not (cotSens in Condition) then
+      AText := AnsiUpperCase(Text)
+    else
+      AText := Text;
+
+    Include(ListForFinder[0].PRecord.setProp, TCL011Item.TPropertyIndex(Field));
+  end;
+
+  Self.PRecordSearch.setProp := ListForFinder[0].PRecord.setProp;
+
+  case TCL011Item.TPropertyIndex(Field) of
+CL011_Key: ListForFinder[0].PRecord.Key := AText;
+    CL011_Description: ListForFinder[0].PRecord.Description := AText;
+    CL011_DescriptionEn: ListForFinder[0].PRecord.DescriptionEn := AText;
+    CL011_cl148: ListForFinder[0].PRecord.cl148 := AText;
+    CL011_is_chronic: ListForFinder[0].PRecord.is_chronic := AText;
+  end;
+end;
+
+
+{=== DATE SEARCH HANDLER ===}
+procedure TCL011Coll.OnSetDateSearchEDT(Value: TDate; field: Word; Condition: TConditionSet);
+begin
+  Include(ListForFinder[0].PRecord.setProp, TCL011Item.TPropertyIndex(Field));
+  Self.PRecordSearch.setProp := ListForFinder[0].PRecord.setProp;
+
+  case TCL011Item.TPropertyIndex(Field) of
+
+  end;
+end;
+
+
+{=== NUMERIC SEARCH HANDLER ===}
+procedure TCL011Coll.OnSetNumSearchEDT(Value: Integer; field: Word; Condition: TConditionSet);
+begin
+  Include(ListForFinder[0].PRecord.setProp, TCL011Item.TPropertyIndex(Field));
+  Self.PRecordSearch.setProp := ListForFinder[0].PRecord.setProp;
+
+  case TCL011Item.TPropertyIndex(Field) of
+
+  end;
+end;
+
+
+{=== LOGICAL (CHECKBOX) SEARCH HANDLER ===}
+procedure TCL011Coll.OnSetLogicalSearchEDT(Value: Boolean; field, logIndex: Word);
+begin
+  case TCL011Item.TPropertyIndex(Field) of
+    CL011_Logical:
+    begin
+      if value then
+        Include(ListForFinder[0].PRecord.Logical, TlogicalCL011(logIndex))
+      else
+        Exclude(ListForFinder[0].PRecord.Logical, TlogicalCL011(logIndex))   
+    end;
+  end;
+end;
+
+
+procedure TCL011Coll.OnSetTextSearchLog(Log: TlogicalCL011Set);
+begin
+  ListForFinder[0].PRecord.Logical := Log;
+end;
+
+procedure TCL011Coll.OrderFieldsSearch1(Grid: TTeeGrid);
+var
+  FieldCollOptionNode, run: PVirtualNode;
+  Comparison: TComparison<PVirtualNode>;
+  i, index, rank: Integer;
+  ArrCol: TArray<TColumn>;
+begin
+  inherited;
+  if linkOptions = nil then  Exit;
+
+  FieldCollOptionNode := FindSearchFieldCollOptionNode;
+  ApplyVisibilityFromTree(FieldCollOptionNode);
+  run := FieldCollOptionNode.FirstChild;
+
+  while run <> nil do
+  begin
+    Grid.Columns[run.index + 1].Header.Text := DisplayName(run.Dummy - 1);
+    ArrayPropOrderSearchOptions[run.index + 1] :=  run.Dummy - 1;
+    run := run.NextSibling;
+  end;
+
+end;
+
+function TCL011Coll.PropType(propIndex: Word): TAspectTypeKind;
+begin
+  inherited;
+  case TCL011Item.TPropertyIndex(propIndex) of
+    CL011_Key: Result := actAnsiString;
+    CL011_Description: Result := actAnsiString;
+    CL011_DescriptionEn: Result := actAnsiString;
+    CL011_cl148: Result := actAnsiString;
+    CL011_is_chronic: Result := actAnsiString;
+    CL011_Logical: Result := actLogical;
+  else
+    Result := actNone;
+  end
+end;
+
+function TCL011Coll.RankSortOption(propIndex: Word): cardinal;
+begin
+  //
+end;
+
+procedure TCL011Coll.SetCell(Sender: TObject; const AColumn: TColumn; const ARow: Integer; var AValue: String);
+var
+  isOld: Boolean;
+  CL011: TCL011Item;
+  ACol: Integer;
+begin
+  if Count = 0 then Exit;
+  ACol := TVirtualModeData(Sender).IndexOf(AColumn);
+  isOld := False;
+  CL011 := Items[ARow];
+  if not Assigned(CL011.PRecord) then
+  begin
+    New(CL011.PRecord);
+    CL011.PRecord.setProp := [];
+	CntUpdates := CntUpdates + 1;
+  end
+  else
+  begin
+    case TCL011Item.TPropertyIndex(ACol) of
+      CL011_Key: isOld :=  CL011.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL011_Description: isOld :=  CL011.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL011_DescriptionEn: isOld :=  CL011.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL011_cl148: isOld :=  CL011.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    CL011_is_chronic: isOld :=  CL011.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AValue;
+    end;
+  end;
+  if isOld then
+  begin
+    Exclude(CL011.PRecord.setProp, TCL011Item.TPropertyIndex(ACol));
+    if CL011.PRecord.setProp = [] then
+    begin
+      Dispose(CL011.PRecord);
+      CL011.PRecord := nil;
+      CntUpdates := CntUpdates - 1;
+      Exit;
+    end;
+  end;
+  Include(CL011.PRecord.setProp, TCL011Item.TPropertyIndex(ACol));
+  case TCL011Item.TPropertyIndex(ACol) of
+    CL011_Key: CL011.PRecord.Key := AValue;
+    CL011_Description: CL011.PRecord.Description := AValue;
+    CL011_DescriptionEn: CL011.PRecord.DescriptionEn := AValue;
+    CL011_cl148: CL011.PRecord.cl148 := AValue;
+    CL011_is_chronic: CL011.PRecord.is_chronic := AValue;
+    CL011_Logical: CL011.PRecord.Logical := tlogicalCL011Set(CL011.StrToLogical08(AValue));
+  end;
+end;
+
+procedure TCL011Coll.SetFieldText(Sender: TObject; const ACol, ARow: Integer; var AFieldText: String);
+var
+  isOld: Boolean;
+  CL011: TCL011Item;
+begin
+  if Count = 0 then Exit;
+  isOld := False; 
+  CL011 := Items[ARow];
+  if not Assigned(CL011.PRecord) then
+  begin
+    New(CL011.PRecord);
+    CL011.PRecord.setProp := [];
+	  CntUpdates := CntUpdates + 1;
+  end
+  else
+  begin
+    case TCL011Item.TPropertyIndex(ACol) of
+      CL011_Key: isOld :=  CL011.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL011_Description: isOld :=  CL011.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL011_DescriptionEn: isOld :=  CL011.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL011_cl148: isOld :=  CL011.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    CL011_is_chronic: isOld :=  CL011.getAnsiStringMap(Self.Buf, Self.posData, ACol) = AFieldText;
+    end;
+  end;
+  if isOld then
+  begin
+    Exclude(CL011.PRecord.setProp, TCL011Item.TPropertyIndex(ACol));
+    if CL011.PRecord.setProp = [] then
+    begin
+      Dispose(CL011.PRecord);
+      CL011.PRecord := nil;
+      CntUpdates := CntUpdates - 1;
+      Exit;
+    end;
+  end;
+  Include(CL011.PRecord.setProp, TCL011Item.TPropertyIndex(ACol));
+  case TCL011Item.TPropertyIndex(ACol) of
+    CL011_Key: CL011.PRecord.Key := AFieldText;
+    CL011_Description: CL011.PRecord.Description := AFieldText;
+    CL011_DescriptionEn: CL011.PRecord.DescriptionEn := AFieldText;
+    CL011_cl148: CL011.PRecord.cl148 := AFieldText;
+    CL011_is_chronic: CL011.PRecord.is_chronic := AFieldText;
+    CL011_Logical: CL011.PRecord.Logical := tlogicalCL011Set(CL011.StrToLogical08(AFieldText));
+  end;
+end;
+
+procedure TCL011Coll.SetItem(Index: Integer; const Value: TCL011Item);
+begin
+  inherited SetItem(Index, Value);
+end;
+
+procedure TCL011Coll.SetSearchingValue(const Value: string);
+var
+  i: Integer;
+begin
+  FSearchingValue := Value;
+  ListCL011Search.Clear;
+  for i := 0 to self.Count - 1 do
+  begin
+    case  TCL011Item.TPropertyIndex(self.FindedRes.PropIndex) of
+	  CL011_Key:
+begin
+  if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+  begin
+    ListCL011Search.Add(self.Items[i]);
+  end;
+end;
+      CL011_Description:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL011Search.Add(self.Items[i]);
+        end;
+      end;
+      CL011_DescriptionEn:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL011Search.Add(self.Items[i]);
+        end;
+      end;
+      CL011_cl148:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL011Search.Add(self.Items[i]);
+        end;
+      end;
+      CL011_is_chronic:
+      begin
+        if string(self.Items[i].IndexAnsiStr).StartsWith(FSearchingValue) then
+        begin
+          ListCL011Search.Add(self.Items[i]);
+        end;
+      end;
+    end;
+  end;
+end;
+
+procedure TCL011Coll.ShowGrid(Grid: TTeeGrid);
+var
+  i: word;
+
+begin
+  Grid.Data:=TVirtualModeData.Create(self.FieldCount + 1, self.Count);
+  for i := 0 to self.FieldCount - 1 do
+  begin
+    TVirtualModeData(Grid.Data).Headers[i] := self.DisplayName(i);
+  end;
+  TVirtualModeData(Grid.Data).Headers[self.FieldCount] := 'Ред';
+
+  TVirtualModeData(Grid.Data).OnGetValue:=self.GetCell;
+  TVirtualModeData(Grid.Data).OnSetValue:=self.SetCell;
+
+  for i := 0 to self.FieldCount - 1 do
+  begin
+    Grid.Columns[i].Width.Value := 100;
+  end;
+
+  Grid.Columns[self.FieldCount].Width.Value := 50;
+  Grid.Columns[self.FieldCount].Index := 0;
+  TTeeGRD(Grid).Width  := TTeeGRD(Grid).Width + 1;
+  TTeeGRD(Grid).Width  := TTeeGRD(Grid).Width - 1;
+
+end;
+
+procedure TCL011Coll.ShowGridFromList(Grid: TTeeGrid; LST: TList<TCL011Item>);
+var
+  i: word;
+
+begin
+  ListForFinder := LST;
+  Grid.Data:=TVirtualModeData.Create(self.FieldCount + 1, LST.Count);
+  for i := 0 to self.FieldCount - 1 do
+  begin
+    TVirtualModeData(Grid.Data).Headers[i] := self.DisplayName(i);
+  end;
+  TVirtualModeData(Grid.Data).Headers[self.FieldCount] := 'Ред';
+
+  TVirtualModeData(Grid.Data).OnGetValue:=self.GetCellList;
+  TVirtualModeData(Grid.Data).OnSetValue:=nil;
+
+  for i := 0 to self.FieldCount - 1 do
+  begin
+    Grid.Columns[i].Width.Value := 100;
+  end;
+
+  Grid.Columns[self.FieldCount].Width.Value := 50;
+  Grid.Columns[self.FieldCount].Index := 0;
+  TTeeGRD(Grid).Width  := TTeeGRD(Grid).Width + 1;
+  TTeeGRD(Grid).Width  := TTeeGRD(Grid).Width - 1;
+
+end;
+
+procedure TCL011Coll.ShowSearchedGrid(Grid: TTeeGrid);
+var
+  i: word;
+
+begin
+  Grid.Data:=TVirtualModeData.Create(self.FieldCount + 1, self.ListCL011Search.Count);
+  for i := 0 to self.FieldCount - 1 do
+  begin
+    TVirtualModeData(Grid.Data).Headers[i] := self.DisplayName(i);
+  end;
+  TVirtualModeData(Grid.Data).Headers[self.FieldCount] := Format('Ред/%d бр.', [self.ListCL011Search.Count]);
+
+  TVirtualModeData(Grid.Data).OnGetValue:=self.GetCellSearch;
+  TVirtualModeData(Grid.Data).OnSetValue:=nil;
+
+  for i := 0 to self.FieldCount - 1 do
+  begin
+    Grid.Columns[i].Width.Value := 110;
+  end;
+
+  Grid.Columns[self.FieldCount].Width.Value := 90;
+  Grid.Columns[self.FieldCount].Index := 0;
+  grid.Margins.Left := 100;
+  grid.Margins.Left := 0;
+  grid.Scrolling.Active := true;
+end;
+
+procedure TCL011Coll.SortByIndexAnsiString;
+var
+  sc : TList<TCollectionItem>;
+
+  procedure QuickSort(L, R: Integer);
+  var
+    I, J, P : Integer;
+    Save : TCollectionItem;
+  begin
+    repeat
+      I := L;
+      J := R;
+      P := (L + R) shr 1;
+      repeat
+        while (Items[I].IndexAnsiStr1) < (Items[P].IndexAnsiStr1) do Inc(I);
+        while (Items[J].IndexAnsiStr1) > (Items[P].IndexAnsiStr1) do Dec(J);
+        if I <= J then begin
+          Save := sc.Items[I];
+          sc.Items[I] := sc.Items[J];
+          sc.Items[J] := Save;
+          if P = I then
+            P := J
+          else if P = J then
+            P := I;
+          Inc(I);
+          Dec(J);
+        end;
+      until I > J;
+      if L < J then QuickSort(L, J);
+      L := I;
+    until I >= R;
+  end;
+begin
+  if (count >1 ) then
+  begin
+    sc := TCollectionForSort(Self).FItems;
+    QuickSort(0,count-1);
+  end;
+end;
+
+procedure TCL011Coll.SortByIndexInt;
+var
+  sc : TList<TCollectionItem>;
+
+  procedure QuickSort(L, R: Integer);
+  var
+    I, J, P : Integer;
+    Save : TCollectionItem;
+  begin
+    repeat
+      I := L;
+      J := R;
+      P := (L + R) shr 1;
+      repeat
+        while (Items[I]).IndexInt < (Items[P]).IndexInt do Inc(I);
+        while (Items[J]).IndexInt > (Items[P]).IndexInt do Dec(J);
+        if I <= J then begin
+          Save := sc.Items[I];
+          sc.Items[I] := sc.Items[J];
+          sc.Items[J] := Save;
+          if P = I then
+            P := J
+          else if P = J then
+            P := I;
+          Inc(I);
+          Dec(J);
+        end;
+      until I > J;
+      if L < J then QuickSort(L, J);
+      L := I;
+    until I >= R;
+  end;
+begin
+  if (count >1 ) then
+  begin
+    sc := TCollectionForSort(Self).FItems;
+    QuickSort(0,count-1);
+  end;
+end;
+
+procedure TCL011Coll.SortByIndexWord;
+var
+  sc : TList<TCollectionItem>;
+
+  procedure QuickSort(L, R: Integer);
+  var
+    I, J, P : Integer;
+    Save : TCollectionItem;
+  begin
+    repeat
+      I := L;
+      J := R;
+      P := (L + R) shr 1;
+      repeat
+        while (Items[I]).IndexWord < (Items[P]).IndexWord do Inc(I);
+        while (Items[J]).IndexWord > (Items[P]).IndexWord do Dec(J);
+        if I <= J then begin
+          Save := sc.Items[I];
+          sc.Items[I] := sc.Items[J];
+          sc.Items[J] := Save;
+          if P = I then
+            P := J
+          else if P = J then
+            P := I;
+          Inc(I);
+          Dec(J);
+        end;
+      until I > J;
+      if L < J then QuickSort(L, J);
+      L := I;
+    until I >= R;
+  end;
+begin
+  if (count >1 ) then
+  begin
+    sc := TCollectionForSort(Self).FItems;
+    QuickSort(0,count-1);
+  end;
+end;
+
+procedure TCL011Coll.SortByIndexValue(propIndex: TCL011Item.TPropertyIndex);
+begin
+  case propIndex of
+    CL011_Key: SortByIndexAnsiString;
+      CL011_Description: SortByIndexAnsiString;
+      CL011_DescriptionEn: SortByIndexAnsiString;
+      CL011_cl148: SortByIndexAnsiString;
+      CL011_is_chronic: SortByIndexAnsiString;
+  end;
+end;
+
+procedure TCL011Coll.ImportXMLNzis(cl000: TObject);
+var
+  Acl000: TCL000EntryCollection;
+  i, j: integer;
+  TempItem: TCL011Item;
+  entry: TCL000EntryItem;
+  idx: array of integer;
+  propIdx: TCL011Item.TPropertyIndex;
+  xmlName: string;
+begin
+  Acl000 := TCL000EntryCollection(cl000);
+
+  // --- Build index mapping between XML meta fields and DDL properties ---
+  SetLength(idx, 0);
+  j := 0;
+
+  for propIdx := Low(TCL011Item.TPropertyIndex) to High(TCL011Item.TPropertyIndex) do
+  begin
+    propName := TRttiEnumerationType.GetName(propIdx);
+
+    // Skip technical
+    if SameText(propName, 'CL011_Key') then Continue;
+    if SameText(propName, 'CL011_Description') then Continue;
+    if SameText(propName, 'CL011_Logical') then Continue;
+
+    // Remove prefix e.g. "CL000_"
+    xmlName := propName.Substring(6);
+
+    // Convert property name to XML name (replace "_" with " ")
+    xmlName := xmlName.Replace('_', ' ');
+
+    // Find matching meta-field index
+    for i := 0 to Acl000.FieldsNames.Count - 1 do
+    begin
+      if SameText(Acl000.FieldsNames[i], xmlName) or SameText(Acl000.FieldsNames[i], propName.Substring(6)) then
+      begin
+        SetLength(idx, Length(idx)+1);
+        idx[High(idx)] := i;
+        Break;
+      end;
+    end;
+  end;
+
+  // --- Insert rows from XML into the generated collection ---
+  for i := 0 to Acl000.Count - 1 do
+  begin
+    entry := Acl000.Items[i];
+    TempItem := TCL011Item(Self.Add);
+    New(TempItem.PRecord);
+    TempItem.PRecord.setProp := [];
+
+    // Key
+    TempItem.PRecord.Key := entry.Key;
+    Include(TempItem.PRecord.setProp, CL011_Key);
+
+    // Description
+    TempItem.PRecord.Description := entry.Descr;
+    Include(TempItem.PRecord.setProp, CL011_Description);
+
+    j := 0;
+
+    // DescriptionEn
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.DescriptionEn := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL011_DescriptionEn);
+    end;
+    Inc(j);
+
+    // cl148
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.cl148 := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL011_cl148);
+    end;
+    Inc(j);
+
+    // is_chronic
+    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then
+    begin
+      TempItem.PRecord.is_chronic := entry.FMetaDataFields[idx[j]].Value;
+      Include(TempItem.PRecord.setProp, CL011_is_chronic);
+    end;
+    Inc(j);
+
+    TempItem.InsertCL011;
+    Self.streamComm.Len := Self.streamComm.Size;
+    Self.cmdFile.CopyFrom(Self.streamComm, 0);
+    Dispose(TempItem.PRecord);
+    TempItem.PRecord := nil;
+  end;
+end;
+
+
+end.

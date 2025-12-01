@@ -1,4 +1,4 @@
-unit Nzis.Nomen.baseCL000;
+unit Nzis.Nomen.baseCL000;//names
 
 interface
 uses
