@@ -1835,6 +1835,92 @@ begin
   end;
 end;
 
+//function TfrmMainGenerator.getProcImportXMLNzis: TStringList;
+//var
+//  i: Integer;
+//  fld, propEnum: string;
+//begin
+//  Result := TStringList.Create;
+//
+//  Result.Add('  Acl000 := TCL000EntryCollection(cl000);');
+//  Result.Add('');
+//  Result.Add('  // --- Build index mapping between XML meta fields and DDL properties ---');
+//  Result.Add('  SetLength(idx, 0);');
+//  Result.Add('  j := 0;');
+//  Result.Add('');
+//  Result.Add('  for propIdx := Low(T!TableName!Item.TPropertyIndex) to High(T!TableName!Item.TPropertyIndex) do');
+//  Result.Add('  begin');
+//  Result.Add('    propName := TRttiEnumerationType.GetName(propIdx);');
+//  Result.Add('');
+//  Result.Add('    // Skip technical');
+//  Result.Add('    if SameText(propName, ''!TableName!_Key'') then Continue;');
+//  Result.Add('    if SameText(propName, ''!TableName!_Description'') then Continue;');
+//  Result.Add('    if SameText(propName, ''!TableName!_Logical'') then Continue;');
+//  Result.Add('');
+//  Result.Add('    // Remove prefix e.g. "CL000_"');
+//  Result.Add('    xmlName := propName.Substring(' + IntToStr(Length(edtNameTable.Text) + 1) + ');');
+//  Result.Add('');
+//  Result.Add('    // Convert property name to XML name (replace "_" with " ")');
+//  Result.Add('    xmlName := xmlName.Replace(''_'', '' '');');
+//  Result.Add('');
+//  Result.Add('    // Find matching meta-field index');
+//  Result.Add('    for i := 0 to Acl000.FieldsNames.Count - 1 do');
+//  Result.Add('    begin');
+//  Result.Add('      if SameText(Acl000.FieldsNames[i], xmlName) or SameText(Acl000.FieldsNames[i], propName.Substring(' + IntToStr(Length(edtNameTable.Text) + 1) + ')) then');
+//  Result.Add('      begin');
+//  Result.Add('        SetLength(idx, Length(idx)+1);');
+//  Result.Add('        idx[High(idx)] := i;');
+//  Result.Add('        Break;');
+//  Result.Add('      end;');
+//  Result.Add('    end;');
+//  Result.Add('  end;');
+//  Result.Add('');
+//  Result.Add('  // --- Insert rows from XML into the generated collection ---');
+//  Result.Add('  for i := 0 to Acl000.Count - 1 do');
+//  Result.Add('  begin');
+//  Result.Add('    entry := Acl000.Items[i];');
+//  Result.Add('    TempItem := T!TableName!Item(Self.Add);');
+//  Result.Add('    New(TempItem.PRecord);');
+//  Result.Add('    TempItem.PRecord.setProp := [];');
+//  Result.Add('');
+//  Result.Add('    // Key');
+//  Result.Add('    TempItem.PRecord.Key := entry.Key;');
+//  Result.Add('    Include(TempItem.PRecord.setProp, !TableName!_Key);');
+//  Result.Add('');
+//  Result.Add('    // Description');
+//  Result.Add('    TempItem.PRecord.Description := entry.Descr;');
+//  Result.Add('    Include(TempItem.PRecord.setProp, !TableName!_Description);');
+//  Result.Add('');
+//  Result.Add('    j := 0;');
+//  Result.Add('');
+//  // генериране на всички полета, без първите 2 и едно за заглавието на vlsProp
+//  for i := 3 to vlsProp.RowCount - 1 do
+//  begin
+//    fld := vlsProp.Keys[i];               // e.g. "DescriptionEn"
+//    if fld = 'Logical' then continue;
+//
+//    propEnum := '!TableName!_' + fld; // e.g. "CL006_DescriptionEn"
+//
+//    Result.Add('    // ' + fld);
+//    Result.Add('    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then');
+//    Result.Add('    begin');
+//    Result.Add('      TempItem.PRecord.' + fld + ' := entry.FMetaDataFields[idx[j]].Value;');
+//    Result.Add('      Include(TempItem.PRecord.setProp, ' + propEnum + ');');
+//    Result.Add('    end;');
+//    Result.Add('    Inc(j);');
+//    Result.Add('');
+//  end;
+//
+//  Result.Add('    TempItem.Insert!TableName!;');
+//  Result.Add('    Self.streamComm.Len := Self.streamComm.Size;');
+//  Result.Add('    Self.cmdFile.CopyFrom(Self.streamComm, 0);');
+//  Result.Add('    Dispose(TempItem.PRecord);');
+//  Result.Add('    TempItem.PRecord := nil;');
+//  Result.Add('  end;');
+//
+//
+//end;
+//DDL property name
 function TfrmMainGenerator.getProcImportXMLNzis: TStringList;
 var
   i: Integer;
@@ -1843,57 +1929,88 @@ begin
   Result := TStringList.Create;
 
   Result.Add('  Acl000 := TCL000EntryCollection(cl000);');
+  Result.Add('  IsNew := Count = 0;');
   Result.Add('');
-  Result.Add('  // --- Build index mapping between XML meta fields and DDL properties ---');
-  Result.Add('  SetLength(idx, 0);');
+
+  // ==== OLD → mark all existing as OLD (except deleted) ====
+  Result.Add('  for i := 0 to Count - 1 do');
+  Result.Add('  begin');
+  Result.Add('    if PWord(PByte(Buf) + Items[i].DataPos - 4)^ = Ord(ct!TableName!Del) then');
+  Result.Add('      Continue;');
+  Result.Add('    PWord(PByte(Buf) + Items[i].DataPos - 4)^ := Ord(ct!TableName!Old);');
+  Result.Add('  end;');
+  Result.Add('');
+
+  // ==== KEY DICT ====
+  Result.Add('  BuildKeyDict(Ord(!TableName!_Key));');
+  Result.Add('');
+
+  // ==== BUILD XML INDEX MAP ====
   Result.Add('  j := 0;');
+  Result.Add('  SetLength(idx, 0);');
   Result.Add('');
   Result.Add('  for propIdx := Low(T!TableName!Item.TPropertyIndex) to High(T!TableName!Item.TPropertyIndex) do');
   Result.Add('  begin');
   Result.Add('    propName := TRttiEnumerationType.GetName(propIdx);');
   Result.Add('');
-  Result.Add('    // Skip technical');
   Result.Add('    if SameText(propName, ''!TableName!_Key'') then Continue;');
   Result.Add('    if SameText(propName, ''!TableName!_Description'') then Continue;');
   Result.Add('    if SameText(propName, ''!TableName!_Logical'') then Continue;');
   Result.Add('');
-  Result.Add('    // Remove prefix e.g. "CL000_"');
-  Result.Add('    xmlName := propName.Substring(' + IntToStr(Length(edtNameTable.Text) + 1) + ');');
-  Result.Add('');
-  Result.Add('    // Convert property name to XML name (replace "_" with " ")');
+  Result.Add('    xmlName := propName.Substring(Length(''!TableName!_''));');
   Result.Add('    xmlName := xmlName.Replace(''_'', '' '');');
   Result.Add('');
-  Result.Add('    // Find matching meta-field index');
   Result.Add('    for i := 0 to Acl000.FieldsNames.Count - 1 do');
-  Result.Add('    begin');
-  Result.Add('      if SameText(Acl000.FieldsNames[i], xmlName) or SameText(Acl000.FieldsNames[i], propName.Substring(' + IntToStr(Length(edtNameTable.Text) + 1) + ')) then');
+  Result.Add('      if SameText(Acl000.FieldsNames[i], xmlName) or');
+  Result.Add('         SameText(Acl000.FieldsNames[i], xmlName.Replace('' '', ''_'')) then');
   Result.Add('      begin');
   Result.Add('        SetLength(idx, Length(idx)+1);');
   Result.Add('        idx[High(idx)] := i;');
   Result.Add('        Break;');
   Result.Add('      end;');
-  Result.Add('    end;');
   Result.Add('  end;');
   Result.Add('');
-  Result.Add('  // --- Insert rows from XML into the generated collection ---');
+
+  // ==== PROCESS XML ENTRIES ====
   Result.Add('  for i := 0 to Acl000.Count - 1 do');
   Result.Add('  begin');
   Result.Add('    entry := Acl000.Items[i];');
-  Result.Add('    TempItem := T!TableName!Item(Self.Add);');
-  Result.Add('    New(TempItem.PRecord);');
-  Result.Add('    TempItem.PRecord.setProp := [];');
   Result.Add('');
-  Result.Add('    // Key');
-  Result.Add('    TempItem.PRecord.Key := entry.Key;');
-  Result.Add('    Include(TempItem.PRecord.setProp, !TableName!_Key);');
+  Result.Add('    if KeyDict.TryGetValue(entry.Key, idxOld) then');
+  Result.Add('    begin');
+  Result.Add('      item := Items[idxOld];');
+  Result.Add('      kindDiff := dkChanged;');
+  Result.Add('    end');
+  Result.Add('    else');
+  Result.Add('    begin');
+  Result.Add('      item := T!TableName!Item(Add);');
+  Result.Add('      kindDiff := dkNew;');
+  Result.Add('    end;');
   Result.Add('');
-  Result.Add('    // Description');
-  Result.Add('    TempItem.PRecord.Description := entry.Descr;');
-  Result.Add('    Include(TempItem.PRecord.setProp, !TableName!_Description);');
+
+  Result.Add('    if item.PRecord <> nil then');
+  Result.Add('      Dispose(item.PRecord);');
+  Result.Add('    New(item.PRecord);');
+  Result.Add('    item.PRecord.setProp := [];');
   Result.Add('');
+
+  // ==== KEY ====
+  Result.Add('    newValue := entry.Key;');
+  Result.Add('    oldValue := getAnsiStringMap(item.DataPos, Ord(!TableName!_Key));');
+  Result.Add('    item.PRecord.Key := newValue;');
+  Result.Add('    if oldValue <> newValue then Include(item.PRecord.setProp, !TableName!_Key);');
+  Result.Add('');
+
+  // ==== DESCRIPTION ====
+  Result.Add('    newValue := entry.Descr;');
+  Result.Add('    oldValue := getAnsiStringMap(item.DataPos, Ord(!TableName!_Description));');
+  Result.Add('    item.PRecord.Description := newValue;');
+  Result.Add('    if oldValue <> newValue then Include(item.PRecord.setProp, !TableName!_Description);');
+  Result.Add('');
+
+  // ==== DYNAMIC META FIELDS ====
   Result.Add('    j := 0;');
-  Result.Add('');
-  // генериране на всички полета, без първите 2 и едно за заглавието на vlsProp
+
   for i := 3 to vlsProp.RowCount - 1 do
   begin
     fld := vlsProp.Keys[i];               // e.g. "DescriptionEn"
@@ -1904,22 +2021,58 @@ begin
     Result.Add('    // ' + fld);
     Result.Add('    if (j < Length(idx)) and (entry.FMetaDataFields[idx[j]] <> nil) then');
     Result.Add('    begin');
-    Result.Add('      TempItem.PRecord.' + fld + ' := entry.FMetaDataFields[idx[j]].Value;');
-    Result.Add('      Include(TempItem.PRecord.setProp, ' + propEnum + ');');
+    Result.Add('      newValue := entry.FMetaDataFields[idx[j]].Value;');
+    Result.Add('      oldValue := getAnsiStringMap(item.DataPos, Ord(' + propEnum + '));');
+    Result.Add('');
+    Result.Add('      Item.PRecord.' + fld + ' := entry.FMetaDataFields[idx[j]].Value;');
+    Result.Add('      if (oldValue <> newValue) then Include(item.PRecord.setProp, ' + propEnum + ');');
     Result.Add('    end;');
     Result.Add('    Inc(j);');
     Result.Add('');
+
   end;
-
-  Result.Add('    TempItem.Insert!TableName!;');
-  Result.Add('    Self.streamComm.Len := Self.streamComm.Size;');
-  Result.Add('    Self.cmdFile.CopyFrom(Self.streamComm, 0);');
-  Result.Add('    Dispose(TempItem.PRecord);');
-  Result.Add('    TempItem.PRecord := nil;');
+  // ==== INSERT / UPDATE decision ====
+  Result.Add('    // NEW');
+  Result.Add('    if kindDiff = dkNew then');
+  Result.Add('    begin');
+  Result.Add('      if IsNew then');
+  Result.Add('      begin');
+  Result.Add('        item.Insert!TableName!;');
+  Result.Add('        PWord(PByte(Buf) + item.DataPos - 4)^ := Ord(ct!TableName!);');
+  Result.Add('        Self.streamComm.Len := Self.streamComm.Size;');
+  Result.Add('        Self.cmdFile.CopyFrom(Self.streamComm, 0);');
+  Result.Add('        Dispose(item.PRecord);');
+  Result.Add('        item.PRecord := nil;');
+  Result.Add('      end;');
+  Result.Add('    end');
+  Result.Add('    else');
+  Result.Add('    begin');
+  Result.Add('      // UPDATE');
+  Result.Add('      if item.PRecord.setProp <> [] then');
+  Result.Add('      begin');
+  Result.Add('        if IsNew then');
+  Result.Add('        begin');
+  Result.Add('          pCardinalData := pointer(PByte(Buf) + 12);');
+  Result.Add('          dataPosition := pCardinalData^ + PosData;');
+  Result.Add('          item.Save!TableName!(dataPosition);');
+  Result.Add('          PWord(PByte(Buf) + item.DataPos - 4)^ := Ord(ct!TableName!);');
+  Result.Add('          Self.streamComm.Len := Self.streamComm.Size;');
+  Result.Add('          Self.cmdFile.CopyFrom(Self.streamComm, 0);');
+  Result.Add('          pCardinalData^ := dataPosition - PosData;');
+  Result.Add('        end');
+  Result.Add('        else');
+  Result.Add('          PWord(PByte(Buf) + item.DataPos - 4)^ := Ord(ct!TableName!);');
+  Result.Add('      end');
+  Result.Add('      else');
+  Result.Add('      begin');
+  Result.Add('        Dispose(item.PRecord);');
+  Result.Add('        item.PRecord := nil;');
+  Result.Add('        PWord(PByte(Buf) + item.DataPos - 4)^ := Ord(ct!TableName!);');
+  Result.Add('      end;');
+  Result.Add('    end;');
   Result.Add('  end;');
-
-
 end;
+
 
 
 
