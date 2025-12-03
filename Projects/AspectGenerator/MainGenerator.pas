@@ -1,4 +1,4 @@
-﻿unit MainGenerator; //GetCellFromRecord  !VirtualTrees! read   real   TLogical  templ  === DATE SEARCH HANDLER ===
+﻿unit MainGenerator; //checkfor
 
 interface
 
@@ -975,14 +975,14 @@ begin
         // Опитваме се да разпознаем дали е 40 или 32 битов логикал по описанието
         //logSizeStr
         begin
-          cmpLines.Add(Format('  if (%s_%s in tempItem.PRecord.setProp) and (TLogicalData' + logSizeStr + '(tempItem.PRecord.%s) <> Self.getLogical' + logSizeStr + 'Map(tempItem.DataPos, word(%s_%s))) then',
+          cmpLines.Add(Format('      if (%s_%s in tempItem.PRecord.setProp) and (TLogicalData' + logSizeStr + '(tempItem.PRecord.%s) <> Self.getLogical' + logSizeStr + 'Map(tempItem.DataPos, word(%s_%s))) then',
             ['!TableName!', fldName, fldName, '!TableName!', fldName]));
         end;
 
-        cmpLines.Add('  begin');
-        cmpLines.Add('    inc(cnt);');
-        cmpLines.Add('    exit;');
-        cmpLines.Add('  end;');
+        cmpLines.Add('      begin');
+        cmpLines.Add('        inc(cnt);');
+        cmpLines.Add('        exit;');
+        cmpLines.Add('      end;');
         cmpLines.Add('');
         Continue;
       end;
@@ -990,12 +990,12 @@ begin
       // Текстови полета (AnsiString / string)
       if fldType.Contains('ansistring') or fldType.Contains('string') then
       begin
-        cmpLines.Add(Format('  if (%s_%s in tempItem.PRecord.setProp) and (tempItem.PRecord.%s <> Self.getAnsiStringMap(tempItem.DataPos, word(%s_%s))) then',
+        cmpLines.Add(Format('      if (%s_%s in tempItem.PRecord.setProp) and (tempItem.PRecord.%s <> Self.getAnsiStringMap(tempItem.DataPos, word(%s_%s))) then',
           ['!TableName!', fldName, fldName, '!TableName!', fldName]));
-        cmpLines.Add('  begin');
-        cmpLines.Add('    inc(cnt);');
-        cmpLines.Add('    exit;');
-        cmpLines.Add('  end;');
+        cmpLines.Add('      begin');
+        cmpLines.Add('        inc(cnt);');
+        cmpLines.Add('        exit;');
+        cmpLines.Add('      end;');
         cmpLines.Add('');
         Continue;
       end;
@@ -1003,12 +1003,12 @@ begin
       // Дати/време
       if fldType.Contains('tdate') or fldType.Contains('ttime') or fldType.Contains('timestamp') then
       begin
-        cmpLines.Add(Format('  if (%s_%s in tempItem.PRecord.setProp) and (tempItem.PRecord.%s <> Self.getDateMap(tempItem.DataPos, word(%s_%s))) then',
+        cmpLines.Add(Format('      if (%s_%s in tempItem.PRecord.setProp) and (tempItem.PRecord.%s <> Self.getDateMap(tempItem.DataPos, word(%s_%s))) then',
           ['!TableName!', fldName, fldName, '!TableName!', fldName]));
-        cmpLines.Add('  begin');
-        cmpLines.Add('    inc(cnt);');
-        cmpLines.Add('    exit;');
-        cmpLines.Add('  end;');
+        cmpLines.Add('      begin');
+        cmpLines.Add('        inc(cnt);');
+        cmpLines.Add('        exit;');
+        cmpLines.Add('      end;');
         cmpLines.Add('');
         Continue;
       end;
@@ -1016,12 +1016,12 @@ begin
       // Integer / Word / Cardinal / Int64
       if fldType.Contains('integer') or fldType.Contains('word') or fldType.Contains('cardinal') or fldType.Contains('int64') then
       begin
-        cmpLines.Add(Format('  if (%s_%s in tempItem.PRecord.setProp) and (tempItem.PRecord.%s <> Self.getIntMap(tempItem.DataPos, word(%s_%s))) then',
+        cmpLines.Add(Format('      if (%s_%s in tempItem.PRecord.setProp) and (tempItem.PRecord.%s <> Self.getIntMap(tempItem.DataPos, word(%s_%s))) then',
           ['!TableName!', fldName, fldName, '!TableName!', fldName]));
-        cmpLines.Add('  begin');
-        cmpLines.Add('    inc(cnt);');
-        cmpLines.Add('    exit;');
-        cmpLines.Add('  end;');
+        cmpLines.Add('      begin');
+        cmpLines.Add('        inc(cnt);');
+        cmpLines.Add('        exit;');
+        cmpLines.Add('      end;');
         cmpLines.Add('');
         Continue;
       end;
@@ -1029,23 +1029,23 @@ begin
       // Double / Float
       if fldType.Contains('double') or fldType.Contains('float') then
       begin
-        cmpLines.Add(Format('  if (%s_%s in tempItem.PRecord.setProp) and (Abs(tempItem.PRecord.%s - Self.getDoubleMap(tempItem.DataPos, word(%s_%s))) > 0.000001) then',
+        cmpLines.Add(Format('      if (%s_%s in tempItem.PRecord.setProp) and (Abs(tempItem.PRecord.%s - Self.getDoubleMap(tempItem.DataPos, word(%s_%s))) > 0.000001) then',
           ['!TableName!', fldName, fldName, '!TableName!', fldName]));
-        cmpLines.Add('  begin');
-        cmpLines.Add('    inc(cnt);');
-        cmpLines.Add('    exit;');
-        cmpLines.Add('  end;');
+        cmpLines.Add('      begin');
+        cmpLines.Add('        inc(cnt);');
+        cmpLines.Add('        exit;');
+        cmpLines.Add('      end;');
         cmpLines.Add('');
         Continue;
       end;
 
       // Cardinal / other fallback
-      cmpLines.Add(Format('  if (%s_%s in tempItem.PRecord.setProp) and (tempItem.PRecord.%s <> Self.getCardinalMap(tempItem.DataPos, word(%s_%s))) then',
+      cmpLines.Add(Format('      if (%s_%s in tempItem.PRecord.setProp) and (tempItem.PRecord.%s <> Self.getCardinalMap(tempItem.DataPos, word(%s_%s))) then',
         ['!TableName!', fldName, fldName, '!TableName!', fldName]));
-      cmpLines.Add('  begin');
-      cmpLines.Add('    inc(cnt);');
-      cmpLines.Add('    exit;');
-      cmpLines.Add('  end;');
+      cmpLines.Add('      begin');
+      cmpLines.Add('        inc(cnt);');
+      cmpLines.Add('        exit;');
+      cmpLines.Add('      end;');
       cmpLines.Add('');
     end;
 

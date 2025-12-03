@@ -5,7 +5,8 @@ uses
   Aspects.Collections, Aspects.Types, Aspects.Functions, Vcl.Dialogs,
   VCLTee.Grid, Tee.Grid.Columns, Tee.GridData.Strings,
   classes, system.SysUtils, windows, System.Generics.Collections,
-  VirtualTrees, VCLTee.Control, System.Generics.Defaults;
+  VirtualTrees, VCLTee.Control, System.Generics.Defaults, Tee.Renders,
+  uGridHelpers  ;
 
 type
 TCollectionForSort = class(TPersistent)
@@ -559,53 +560,53 @@ begin
     begin
 	  // === проверки за запазване (CheckForSave) ===
 
-  if (CL006_Key in tempItem.PRecord.setProp) and (tempItem.PRecord.Key <> Self.getAnsiStringMap(tempItem.DataPos, word(CL006_Key))) then
-  begin
-    inc(cnt);
-    exit;
-  end;
+      if (CL006_Key in tempItem.PRecord.setProp) and (tempItem.PRecord.Key <> Self.getAnsiStringMap(tempItem.DataPos, word(CL006_Key))) then
+      begin
+        inc(cnt);
+        exit;
+      end;
 
-  if (CL006_Description in tempItem.PRecord.setProp) and (tempItem.PRecord.Description <> Self.getAnsiStringMap(tempItem.DataPos, word(CL006_Description))) then
-  begin
-    inc(cnt);
-    exit;
-  end;
+      if (CL006_Description in tempItem.PRecord.setProp) and (tempItem.PRecord.Description <> Self.getAnsiStringMap(tempItem.DataPos, word(CL006_Description))) then
+      begin
+        inc(cnt);
+        exit;
+      end;
 
-  if (CL006_DescriptionEn in tempItem.PRecord.setProp) and (tempItem.PRecord.DescriptionEn <> Self.getAnsiStringMap(tempItem.DataPos, word(CL006_DescriptionEn))) then
-  begin
-    inc(cnt);
-    exit;
-  end;
+      if (CL006_DescriptionEn in tempItem.PRecord.setProp) and (tempItem.PRecord.DescriptionEn <> Self.getAnsiStringMap(tempItem.DataPos, word(CL006_DescriptionEn))) then
+      begin
+        inc(cnt);
+        exit;
+      end;
 
-  if (CL006_nhif_code in tempItem.PRecord.setProp) and (tempItem.PRecord.nhif_code <> Self.getAnsiStringMap(tempItem.DataPos, word(CL006_nhif_code))) then
-  begin
-    inc(cnt);
-    exit;
-  end;
+      if (CL006_nhif_code in tempItem.PRecord.setProp) and (tempItem.PRecord.nhif_code <> Self.getAnsiStringMap(tempItem.DataPos, word(CL006_nhif_code))) then
+      begin
+        inc(cnt);
+        exit;
+      end;
 
-  if (CL006_clinical_speciality in tempItem.PRecord.setProp) and (tempItem.PRecord.clinical_speciality <> Self.getAnsiStringMap(tempItem.DataPos, word(CL006_clinical_speciality))) then
-  begin
-    inc(cnt);
-    exit;
-  end;
+      if (CL006_clinical_speciality in tempItem.PRecord.setProp) and (tempItem.PRecord.clinical_speciality <> Self.getAnsiStringMap(tempItem.DataPos, word(CL006_clinical_speciality))) then
+      begin
+        inc(cnt);
+        exit;
+      end;
 
-  if (CL006_nhif_name in tempItem.PRecord.setProp) and (tempItem.PRecord.nhif_name <> Self.getAnsiStringMap(tempItem.DataPos, word(CL006_nhif_name))) then
-  begin
-    inc(cnt);
-    exit;
-  end;
+      if (CL006_nhif_name in tempItem.PRecord.setProp) and (tempItem.PRecord.nhif_name <> Self.getAnsiStringMap(tempItem.DataPos, word(CL006_nhif_name))) then
+      begin
+        inc(cnt);
+        exit;
+      end;
 
-  if (CL006_role in tempItem.PRecord.setProp) and (tempItem.PRecord.role <> Self.getAnsiStringMap(tempItem.DataPos, word(CL006_role))) then
-  begin
-    inc(cnt);
-    exit;
-  end;
+      if (CL006_role in tempItem.PRecord.setProp) and (tempItem.PRecord.role <> Self.getAnsiStringMap(tempItem.DataPos, word(CL006_role))) then
+      begin
+        inc(cnt);
+        exit;
+      end;
 
-  if (CL006_Logical in tempItem.PRecord.setProp) and (TLogicalData08(tempItem.PRecord.Logical) <> Self.getLogical08Map(tempItem.DataPos, word(CL006_Logical))) then
-  begin
-    inc(cnt);
-    exit;
-  end;
+      if (CL006_Logical in tempItem.PRecord.setProp) and (TLogicalData08(tempItem.PRecord.Logical) <> Self.getLogical08Map(tempItem.DataPos, word(CL006_Logical))) then
+      begin
+        inc(cnt);
+        exit;
+      end;
     end;
   end;
 end;
@@ -1431,7 +1432,7 @@ end;
 procedure TCL006Coll.ShowGrid(Grid: TTeeGrid);
 var
   i: word;
-
+  clls: TDiffCellRenderer;
 begin
   Grid.Data:=TVirtualModeData.Create(self.FieldCount + 1, self.Count);
   for i := 0 to self.FieldCount - 1 do
@@ -1447,6 +1448,11 @@ begin
   begin
     Grid.Columns[i].Width.Value := 100;
   end;
+  
+  clls := TDiffCellRenderer.Create(Grid.Cells.OnChange);
+  clls.FGrid := Grid;
+  clls.FCollAdb := Self;
+  Grid.Cells := clls;
 
   Grid.Columns[self.FieldCount].Width.Value := 50;
   Grid.Columns[self.FieldCount].Index := 0;
@@ -1883,6 +1889,45 @@ begin
       KeyDict.AddOrSetValue(keyStr, i);
     end;
   end;
+end;
+
+function TCL006Coll.CellDiffKind(ACol, ARow: Integer): TDiffKind;
+begin
+  if (ARow > count) or (ARow < 0) then
+    Exit;
+
+
+  if items[ARow].DataPos = 0 then
+  begin
+    Result := dkNew;
+    Exit;
+  end;
+
+  if (Pword(PByte(Buf) + items[ARow].DataPos +  - 4)^ = ord(ctCL006Old)) then
+  begin
+    Result := dkForDeleted;
+    Exit;
+  end;
+
+  if (Pword(PByte(Buf) + items[ARow].DataPos +  - 4)^ = ord(ctCL006Del)) then
+  begin
+    Result := dkDeleted;
+    Exit;
+  end;
+
+  if Items[ARow].PRecord = nil then
+  begin
+    Result := dkNone;
+    Exit;
+  end;
+
+  if TCL006Item.TPropertyIndex(ACol) in Items[ARow].PRecord.setProp then
+  begin
+    Result := dkChanged;
+    Exit;
+  end;
+  //test
+
 end;
 
 {NZIS_END}
